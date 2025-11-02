@@ -7,10 +7,16 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ==================== EXCHANGE CONFIG ====================
+# OKX_CONFIG = {
+#     'api_key': os.getenv('OKX_API_KEY', '270026b1-87dd-4e8b-b455-046ce944b62d'),
+#     'secret': os.getenv('OKX_SECRET_KEY', 'B447ABD700F9C17102D87F9D7BF1B5F5'),
+#     'password': os.getenv('OKX_PASSPHRASE', 'db9boymTN@'),
+#     'sandbox': True,  # ใช้ True สำหรับ testnet, False สำหรับ real trading
+# }
 OKX_CONFIG = {
-    'api_key': os.getenv('OKX_API_KEY', ''),
-    'secret': os.getenv('OKX_SECRET_KEY', ''),
-    'password': os.getenv('OKX_PASSPHRASE', ''),
+    'api_key': '270026b1-87dd-4e8b-b455-046ce944b62d',
+    'secret': 'B447ABD700F9C17102D87F9D7BF1B5F5',
+    'password': 'db9boymTN@',
     'sandbox': False,  # ใช้ True สำหรับ testnet, False สำหรับ real trading
 }
 
@@ -33,16 +39,16 @@ RISK_CONFIG = {
 
 # ==================== TELEGRAM CONFIG ====================
 TELEGRAM_CONFIG = {
-    'token': os.getenv('TELEGRAM_BOT_TOKEN', ''),
-    'chat_id': os.getenv('TELEGRAM_CHAT_ID', ''),
+    'token': os.getenv('TELEGRAM_BOT_TOKEN', '8445583953:AAHvaT4WC31YM2yQdrA5mu5PQ8N8XqNig78'),
+    'chat_id': os.getenv('TELEGRAM_CHAT_ID', '5292577404'),
     'notifications_enabled': True,
 }
 
 # ==================== MODEL CONFIG ====================
 MODEL_CONFIG = {
-    'model_path': 'best_trading_model.pkl',
-    'scaler_path': 'feature_scaler.pkl',
-    'features_path': 'feature_columns.pkl',
+    'model_path': 'saved_models/best_trading_model_lightgbm.pkl',
+    'scaler_path': 'saved_models/feature_scaler.pkl',
+    'features_path': 'saved_models/feature_columns.pkl',
     'min_confidence': 0.6,  # ความมั่นใจขั้นต่ำที่ยอมรับ
 }
 

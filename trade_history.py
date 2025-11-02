@@ -12,8 +12,8 @@ from config_bot import DATABASE_CONFIG
 class TradeHistoryManager:
     def __init__(self, db_path: str = None):
         self.db_path = db_path or DATABASE_CONFIG['db_path']
+        self.setup_logging()      # ✅ แก้: ย้ายมาก่อน setup_database()
         self.setup_database()
-        self.setup_logging()
     
     def setup_logging(self):
         self.logger = logging.getLogger(__name__)
@@ -218,12 +218,15 @@ class TradeHistoryManager:
             ''', (symbol,))
             
             row = cursor.fetchone()
-            conn.close()
             
             if row:
+                # ✅ แก้: เก็บ description ก่อน close connection
                 columns = [description[0] for description in cursor.description]
-                return dict(zip(columns, row))
+                result = dict(zip(columns, row))
+                conn.close()
+                return result
             
+            conn.close()  # ✅ แก้: ปิด connection แม้ไม่มีข้อมูล
             return None
             
         except Exception as e:
@@ -268,6 +271,7 @@ class TradeHistoryManager:
             
             conn.close()
             
+            # ✅ แก้: ปรับการคำนวณ win_rate ให้ชัดเจนขึ้น
             if trade_stats and trade_stats[0] and trade_stats[0] > 0:
                 win_rate = (trade_stats[3] / trade_stats[2]) * 100 if trade_stats[2] > 0 else 0
             else:
@@ -328,9 +332,11 @@ class TradeHistoryManager:
                 WHERE t1.side = 'buy' AND t2.id IS NULL AND t1.status = 'filled'
             ''')
             
+            # ✅ แก้: เก็บ description ก่อน iterate
+            columns = [description[0] for description in cursor.description]
+            
             open_positions = []
             for row in cursor.fetchall():
-                columns = [description[0] for description in cursor.description]
                 open_positions.append(dict(zip(columns, row)))
             
             conn.close()

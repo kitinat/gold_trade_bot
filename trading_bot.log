@@ -1,0 +1,414 @@
+2025-11-03 00:27:26,647 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 00:27:26,679 - root - ERROR - Failed to start trading bot: 'TradeHistoryManager' object has no attribute 'logger'
+2025-11-03 00:28:56,601 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 00:28:56,603 - root - ERROR - Failed to start trading bot: 'TradeHistoryManager' object has no attribute 'logger'
+2025-11-03 00:32:04,635 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 00:32:04,637 - root - ERROR - Failed to start trading bot: 'TradeHistoryManager' object has no attribute 'logger'
+2025-11-03 00:34:44,779 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 00:34:44,780 - trade_history - INFO - ✅ Trade history database setup completed
+2025-11-03 00:34:44,780 - __main__ - INFO - ✅ Trade history manager initialized
+2025-11-03 00:34:45,334 - __main__ - ERROR - ❌ OKX authentication failed: okx {"msg":"Invalid OK-ACCESS-KEY","code":"50111"}
+2025-11-03 00:34:45,334 - root - ERROR - Failed to start trading bot: okx {"msg":"Invalid OK-ACCESS-KEY","code":"50111"}
+2025-11-03 00:37:45,568 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 00:37:45,570 - trade_history - INFO - ✅ Trade history database setup completed
+2025-11-03 00:37:45,571 - __main__ - INFO - ✅ Trade history manager initialized
+2025-11-03 00:37:46,045 - __main__ - ERROR - ❌ OKX authentication failed: okx {"msg":"Invalid OK-ACCESS-KEY","code":"50111"}
+2025-11-03 00:37:46,046 - root - ERROR - Failed to start trading bot: okx {"msg":"Invalid OK-ACCESS-KEY","code":"50111"}
+2025-11-03 00:38:55,242 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 00:38:55,243 - trade_history - INFO - ✅ Trade history database setup completed
+2025-11-03 00:38:55,243 - __main__ - INFO - ✅ Trade history manager initialized
+2025-11-03 00:38:56,519 - __main__ - ERROR - ❌ OKX authentication failed: okx {"msg":"Invalid OK-ACCESS-KEY","code":"50111"}
+2025-11-03 00:38:56,520 - root - ERROR - Failed to start trading bot: okx {"msg":"Invalid OK-ACCESS-KEY","code":"50111"}
+2025-11-03 00:40:03,490 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 00:40:03,491 - trade_history - INFO - ✅ Trade history database setup completed
+2025-11-03 00:40:03,492 - __main__ - INFO - ✅ Trade history manager initialized
+2025-11-03 00:40:05,191 - __main__ - ERROR - ❌ OKX authentication failed: okx {"msg":"APIKey does not match current environment.","code":"50101"}
+2025-11-03 00:40:05,192 - root - ERROR - Failed to start trading bot: okx {"msg":"APIKey does not match current environment.","code":"50101"}
+2025-11-03 00:42:15,986 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 00:42:15,988 - trade_history - INFO - ✅ Trade history database setup completed
+2025-11-03 00:42:15,988 - __main__ - INFO - ✅ Trade history manager initialized
+2025-11-03 00:42:17,542 - __main__ - INFO - ✅ OKX connection established successfully
+2025-11-03 00:42:17,543 - __main__ - WARNING - ⚠️  Model files not found. Running without ML predictions.
+2025-11-03 00:42:17,545 - __main__ - INFO - ✅ Hourly report system started
+2025-11-03 00:42:17,546 - __main__ - INFO - ✅ Trading bot initialized successfully
+2025-11-03 00:42:17,547 - __main__ - INFO - 🤖 Starting trading bot with 15 minute interval
+2025-11-03 00:42:18,561 - __main__ - INFO - 🔄 Starting trading cycle at 2025-11-03 00:42:18.561188
+2025-11-03 00:42:18,866 - __main__ - ERROR - Error checking position: okx does not have market symbol PAXGUSDT
+2025-11-03 00:42:18,870 - trade_history - ERROR - 📝 Error logged: POSITION_CHECK - okx does not have market symbol PAXGUSDT
+2025-11-03 00:42:18,870 - __main__ - ERROR - Failed to check position
+2025-11-03 00:42:18,871 - __main__ - INFO - 💤 Cycle completed in 0.3s, sleeping for 899.7s
+2025-11-03 00:54:18,533 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 00:54:18,533 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 00:54:37,402 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 00:54:37,402 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 00:54:39,775 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 00:54:39,775 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 00:54:40,017 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 00:54:40,018 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 00:54:40,018 - __main__ - ERROR - Unexpected error in main loop: asyncio.run() cannot be called from a running event loop
+2025-11-03 00:54:40,024 - trade_history - ERROR - 📝 Error logged: MAIN_LOOP - asyncio.run() cannot be called from a running event loop
+2025-11-03 00:54:40,196 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 00:54:40,197 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 00:54:40,335 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 00:54:40,336 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 00:54:40,338 - root - ERROR - Failed to start trading bot: asyncio.run() cannot be called from a running event loop
+2025-11-03 00:54:50,899 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 00:54:50,903 - trade_history - INFO - ✅ Trade history database setup completed
+2025-11-03 00:54:50,903 - __main__ - INFO - ✅ Trade history manager initialized
+2025-11-03 00:54:52,835 - __main__ - INFO - ✅ OKX connection established successfully
+2025-11-03 00:54:52,836 - __main__ - INFO - ✅ Trading symbol validated: PAXG/USDT
+2025-11-03 00:54:52,836 - __main__ - INFO -    Market type: spot
+2025-11-03 00:54:52,836 - __main__ - INFO -    Spot: True
+2025-11-03 00:54:52,836 - __main__ - INFO -    Swap: False
+2025-11-03 00:54:52,836 - __main__ - WARNING - ⚠️  Model files not found. Running without ML predictions.
+2025-11-03 00:54:52,838 - __main__ - INFO - ✅ Hourly report system started
+2025-11-03 00:54:52,838 - __main__ - INFO - ✅ Trading bot initialized successfully
+2025-11-03 00:54:52,838 - __main__ - INFO - 🤖 Starting trading bot with 15 minute interval
+2025-11-03 00:54:53,809 - __main__ - INFO - 🔄 Starting trading cycle at 2025-11-03 00:54:53.809666
+2025-11-03 00:54:54,123 - __main__ - ERROR - Error checking position: 'USDT'
+2025-11-03 00:54:54,129 - trade_history - ERROR - 📝 Error logged: POSITION_CHECK - 'USDT'
+2025-11-03 00:54:54,130 - __main__ - ERROR - Failed to check position
+2025-11-03 00:54:54,130 - __main__ - INFO - 💤 Cycle completed in 0.3s, sleeping for 899.7s
+2025-11-03 00:56:30,122 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 00:56:30,123 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 00:57:05,627 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 00:57:05,627 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 00:57:06,502 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 00:57:06,502 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 00:57:06,508 - __main__ - ERROR - Unexpected error in main loop: asyncio.run() cannot be called from a running event loop
+2025-11-03 00:57:06,515 - trade_history - ERROR - 📝 Error logged: MAIN_LOOP - asyncio.run() cannot be called from a running event loop
+2025-11-03 00:57:06,711 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 00:57:06,711 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 00:58:06,516 - __main__ - INFO - Trading bot stopped
+2025-11-03 01:09:51,553 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 01:09:51,556 - trade_history - INFO - ✅ Trade history database setup completed
+2025-11-03 01:09:51,556 - __main__ - INFO - ✅ Trade history manager initialized
+2025-11-03 01:09:53,109 - __main__ - INFO - ✅ OKX connection established successfully
+2025-11-03 01:09:53,110 - __main__ - INFO - ✅ Trading symbol validated: PAXG/USDT
+2025-11-03 01:09:53,110 - __main__ - INFO -    Market type: spot
+2025-11-03 01:09:53,110 - __main__ - INFO -    Spot: True
+2025-11-03 01:09:53,110 - __main__ - INFO -    Swap: False
+2025-11-03 01:09:53,111 - __main__ - WARNING - ============================================================
+2025-11-03 01:09:53,111 - __main__ - WARNING - ⚠️  MODEL FILES NOT FOUND
+2025-11-03 01:09:53,111 - __main__ - WARNING - ============================================================
+2025-11-03 01:09:53,111 - __main__ - WARNING - Found files:
+2025-11-03 01:09:53,111 - __main__ - WARNING -    ✅ Scaler: saved_models/feature_scaler.pkl (1.2 KB, modified: 2025-11-02 20:52)
+2025-11-03 01:09:53,111 - __main__ - WARNING -    ✅ Features: saved_models/feature_columns.pkl (0.4 KB, modified: 2025-11-02 20:52)
+2025-11-03 01:09:53,112 - __main__ - WARNING - 
+2025-11-03 01:09:53,112 - __main__ - WARNING - Missing files:
+2025-11-03 01:09:53,112 - __main__ - WARNING -    ❌ Model: saved_models/best_trading_model.pkl
+2025-11-03 01:09:53,112 - __main__ - WARNING - 
+2025-11-03 01:09:53,112 - __main__ - WARNING - 📝 HOW TO TRAIN A NEW MODEL:
+2025-11-03 01:09:53,112 - __main__ - WARNING - ============================================================
+2025-11-03 01:09:53,113 - __main__ - WARNING - 
+2025-11-03 01:09:53,113 - __main__ - WARNING - Option 1: Use train_model_v2.py (Recommended - Advanced)
+2025-11-03 01:09:53,113 - __main__ - WARNING -   Command: python train_model_v2.py
+2025-11-03 01:09:53,113 - __main__ - WARNING -   Features:
+2025-11-03 01:09:53,113 - __main__ - WARNING -     - Auto-tuning with Optuna
+2025-11-03 01:09:53,113 - __main__ - WARNING -     - Multiple model comparison (XGBoost, LightGBM, RF, LSTM)
+2025-11-03 01:09:53,113 - __main__ - WARNING -     - Advanced feature engineering
+2025-11-03 01:09:53,113 - __main__ - WARNING -     - Detailed performance reports
+2025-11-03 01:09:53,113 - __main__ - WARNING - 
+2025-11-03 01:09:53,113 - __main__ - WARNING - Option 2: Use train_model.py (Basic)
+2025-11-03 01:09:53,113 - __main__ - WARNING -   Command: python train_model.py
+2025-11-03 01:09:53,114 - __main__ - WARNING - 
+2025-11-03 01:09:53,114 - __main__ - WARNING - Option 3: Enable auto-training (if available)
+2025-11-03 01:09:53,114 - __main__ - WARNING -   Edit config_bot.py and set:
+2025-11-03 01:09:53,114 - __main__ - WARNING -     BOT_CONFIG['auto_train_model'] = True
+2025-11-03 01:09:53,114 - __main__ - WARNING - 
+2025-11-03 01:09:53,114 - __main__ - WARNING - ============================================================
+2025-11-03 01:09:53,114 - __main__ - WARNING - 🔄 BOT WILL CONTINUE IN BASIC SIGNAL MODE
+2025-11-03 01:09:53,114 - __main__ - WARNING - ============================================================
+2025-11-03 01:09:53,114 - __main__ - WARNING - Basic Mode uses:
+2025-11-03 01:09:53,114 - __main__ - WARNING -   - RSI (Relative Strength Index)
+2025-11-03 01:09:53,114 - __main__ - WARNING -   - EMA (Exponential Moving Average)
+2025-11-03 01:09:53,114 - __main__ - WARNING -   - Simple trend detection
+2025-11-03 01:09:53,115 - __main__ - WARNING - 
+2025-11-03 01:09:53,115 - __main__ - WARNING - ⚠️  Note: Basic mode has lower accuracy than ML models
+2025-11-03 01:09:53,115 - __main__ - WARNING -    Expected performance: ~55-65% win rate
+2025-11-03 01:09:53,115 - __main__ - WARNING -    ML model performance: ~70-85% win rate
+2025-11-03 01:09:53,115 - __main__ - WARNING - ============================================================
+2025-11-03 01:09:53,116 - __main__ - INFO - ✅ Hourly report system started
+2025-11-03 01:09:53,116 - __main__ - INFO - ✅ Trading bot initialized successfully
+2025-11-03 01:09:53,116 - __main__ - INFO - 🤖 Starting trading bot with 15 minute interval
+2025-11-03 01:09:54,119 - __main__ - INFO - 🔄 Starting trading cycle at 2025-11-03 01:09:54.119729
+2025-11-03 01:09:54,419 - __main__ - ERROR - Error checking position: 'USDT'
+2025-11-03 01:09:54,423 - trade_history - ERROR - 📝 Error logged: POSITION_CHECK - 'USDT'
+2025-11-03 01:09:54,424 - __main__ - ERROR - Failed to check position
+2025-11-03 01:09:54,424 - __main__ - INFO - 💤 Cycle completed in 0.3s, sleeping for 899.7s
+2025-11-03 01:11:20,434 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:11:20,435 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:11:28,813 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:11:28,813 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:11:31,708 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:11:31,708 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:11:31,885 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:11:31,886 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:11:31,887 - __main__ - ERROR - Unexpected error in main loop: asyncio.run() cannot be called from a running event loop
+2025-11-03 01:11:31,895 - trade_history - ERROR - 📝 Error logged: MAIN_LOOP - asyncio.run() cannot be called from a running event loop
+2025-11-03 01:11:32,032 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:11:32,032 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:11:32,187 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:11:32,188 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:11:32,189 - root - ERROR - Failed to start trading bot: asyncio.run() cannot be called from a running event loop
+2025-11-03 01:11:42,282 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 01:11:42,286 - trade_history - INFO - ✅ Trade history database setup completed
+2025-11-03 01:11:42,287 - __main__ - INFO - ✅ Trade history manager initialized
+2025-11-03 01:11:43,742 - __main__ - INFO - ✅ OKX connection established successfully
+2025-11-03 01:11:43,742 - __main__ - INFO - ✅ Trading symbol validated: PAXG/USDT
+2025-11-03 01:11:43,743 - __main__ - INFO -    Market type: spot
+2025-11-03 01:11:43,743 - __main__ - INFO -    Spot: True
+2025-11-03 01:11:43,743 - __main__ - INFO -    Swap: False
+2025-11-03 01:11:43,744 - __main__ - INFO - ============================================================
+2025-11-03 01:11:43,745 - __main__ - INFO - 📦 LOADING ML MODELS
+2025-11-03 01:11:43,745 - __main__ - INFO - ============================================================
+2025-11-03 01:11:43,745 - __main__ - INFO - Loading model...
+2025-11-03 01:11:43,793 - __main__ - INFO -    ✅ Model type: LGBMClassifier
+2025-11-03 01:11:43,793 - __main__ - INFO - Loading scaler...
+2025-11-03 01:11:43,805 - __main__ - INFO -    ✅ Scaler type: StandardScaler
+2025-11-03 01:11:43,805 - __main__ - INFO - Loading feature columns...
+2025-11-03 01:11:43,816 - __main__ - INFO -    ✅ Number of features: 25
+2025-11-03 01:11:43,826 - __main__ - INFO - 
+2025-11-03 01:11:43,826 - __main__ - INFO - 📊 MODEL METADATA:
+2025-11-03 01:11:43,827 - __main__ - INFO -    Model Name: lightgbm
+2025-11-03 01:11:43,827 - __main__ - INFO -    Training Date: 2025-11-02T20:52:15.184574
+2025-11-03 01:11:43,827 - __main__ - INFO -    Best Score: 1.0
+2025-11-03 01:11:43,827 - __main__ - INFO -    Training Samples: 17457
+2025-11-03 01:11:43,827 - __main__ - INFO -    ✅ Feature calculator initialized
+2025-11-03 01:11:43,827 - __main__ - INFO - ============================================================
+2025-11-03 01:11:43,827 - __main__ - INFO - ✅ ML MODELS LOADED SUCCESSFULLY
+2025-11-03 01:11:43,828 - __main__ - INFO - ============================================================
+2025-11-03 01:11:43,828 - __main__ - INFO - Mode: ADVANCED ML PREDICTIONS
+2025-11-03 01:11:43,828 - __main__ - INFO - Expected Performance: 70-85% win rate
+2025-11-03 01:11:43,828 - __main__ - INFO - 
+2025-11-03 01:11:43,828 - __main__ - INFO - Feature List (Top 10):
+2025-11-03 01:11:43,828 - __main__ - INFO -     1. h1_trend_strength
+2025-11-03 01:11:43,828 - __main__ - INFO -     2. h1_trend_direction
+2025-11-03 01:11:43,828 - __main__ - INFO -     3. h1_rsi
+2025-11-03 01:11:43,828 - __main__ - INFO -     4. h1_macd
+2025-11-03 01:11:43,828 - __main__ - INFO -     5. m15_rsi_14
+2025-11-03 01:11:43,829 - __main__ - INFO -     6. m15_macd
+2025-11-03 01:11:43,829 - __main__ - INFO -     7. m15_macd_hist
+2025-11-03 01:11:43,829 - __main__ - INFO -     8. m15_stoch_k
+2025-11-03 01:11:43,829 - __main__ - INFO -     9. m15_stoch_d
+2025-11-03 01:11:43,829 - __main__ - INFO -    10. m15_roc_5
+2025-11-03 01:11:43,829 - __main__ - INFO -    ... and 15 more features
+2025-11-03 01:11:43,829 - __main__ - INFO - ============================================================
+2025-11-03 01:11:43,830 - __main__ - INFO - ✅ Hourly report system started
+2025-11-03 01:11:43,830 - __main__ - INFO - ✅ Trading bot initialized successfully
+2025-11-03 01:11:43,830 - __main__ - INFO - 🤖 Starting trading bot with 15 minute interval
+2025-11-03 01:11:45,203 - __main__ - INFO - 🔄 Starting trading cycle at 2025-11-03 01:11:45.202972
+2025-11-03 01:11:45,503 - __main__ - ERROR - Error checking position: 'USDT'
+2025-11-03 01:11:45,508 - trade_history - ERROR - 📝 Error logged: POSITION_CHECK - 'USDT'
+2025-11-03 01:11:45,508 - __main__ - ERROR - Failed to check position
+2025-11-03 01:11:45,508 - __main__ - INFO - 💤 Cycle completed in 0.3s, sleeping for 899.7s
+2025-11-03 01:15:58,832 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:15:58,832 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:16:41,403 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:16:41,403 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:16:42,904 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:16:42,904 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:16:43,288 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:16:43,288 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:16:43,289 - __main__ - ERROR - Unexpected error in main loop: asyncio.run() cannot be called from a running event loop
+2025-11-03 01:16:43,298 - trade_history - ERROR - 📝 Error logged: MAIN_LOOP - asyncio.run() cannot be called from a running event loop
+2025-11-03 01:16:43,470 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:16:43,471 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:16:54,055 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:16:54,055 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:16:54,897 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:16:54,897 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:16:54,899 - root - ERROR - Failed to start trading bot: asyncio.run() cannot be called from a running event loop
+2025-11-03 01:19:37,672 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 01:19:37,676 - trade_history - INFO - ✅ Trade history database setup completed
+2025-11-03 01:19:37,676 - __main__ - INFO - ✅ Trade history manager initialized
+2025-11-03 01:19:39,645 - __main__ - INFO - ✅ OKX connection established successfully
+2025-11-03 01:19:39,646 - __main__ - INFO - ✅ Trading symbol validated: PAXG/USDT
+2025-11-03 01:19:39,646 - __main__ - INFO -    Market type: spot
+2025-11-03 01:19:39,646 - __main__ - INFO -    Spot: True
+2025-11-03 01:19:39,647 - __main__ - INFO -    Swap: False
+2025-11-03 01:19:39,648 - __main__ - INFO - ============================================================
+2025-11-03 01:19:39,648 - __main__ - INFO - 📦 LOADING ML MODELS
+2025-11-03 01:19:39,648 - __main__ - INFO - ============================================================
+2025-11-03 01:19:39,648 - __main__ - INFO - Loading model...
+2025-11-03 01:19:39,681 - __main__ - INFO -    ✅ Model type: LGBMClassifier
+2025-11-03 01:19:39,681 - __main__ - INFO - Loading scaler...
+2025-11-03 01:19:39,682 - __main__ - INFO -    ✅ Scaler type: StandardScaler
+2025-11-03 01:19:39,682 - __main__ - INFO - Loading feature columns...
+2025-11-03 01:19:39,683 - __main__ - INFO -    ✅ Number of features: 25
+2025-11-03 01:19:39,683 - __main__ - INFO - 
+2025-11-03 01:19:39,684 - __main__ - INFO - 📊 MODEL METADATA:
+2025-11-03 01:19:39,684 - __main__ - INFO -    Model Name: lightgbm
+2025-11-03 01:19:39,684 - __main__ - INFO -    Training Date: 2025-11-02T20:52:15.184574
+2025-11-03 01:19:39,684 - __main__ - INFO -    Best Score: 1.0
+2025-11-03 01:19:39,684 - __main__ - INFO -    Training Samples: 17457
+2025-11-03 01:19:39,685 - __main__ - INFO -    ✅ Feature calculator initialized
+2025-11-03 01:19:39,685 - __main__ - INFO - ============================================================
+2025-11-03 01:19:39,685 - __main__ - INFO - ✅ ML MODELS LOADED SUCCESSFULLY
+2025-11-03 01:19:39,685 - __main__ - INFO - ============================================================
+2025-11-03 01:19:39,685 - __main__ - INFO - Mode: ADVANCED ML PREDICTIONS
+2025-11-03 01:19:39,685 - __main__ - INFO - Expected Performance: 70-85% win rate
+2025-11-03 01:19:39,686 - __main__ - INFO - 
+2025-11-03 01:19:39,686 - __main__ - INFO - Feature List (Top 10):
+2025-11-03 01:19:39,686 - __main__ - INFO -     1. h1_trend_strength
+2025-11-03 01:19:39,686 - __main__ - INFO -     2. h1_trend_direction
+2025-11-03 01:19:39,686 - __main__ - INFO -     3. h1_rsi
+2025-11-03 01:19:39,686 - __main__ - INFO -     4. h1_macd
+2025-11-03 01:19:39,686 - __main__ - INFO -     5. m15_rsi_14
+2025-11-03 01:19:39,686 - __main__ - INFO -     6. m15_macd
+2025-11-03 01:19:39,687 - __main__ - INFO -     7. m15_macd_hist
+2025-11-03 01:19:39,687 - __main__ - INFO -     8. m15_stoch_k
+2025-11-03 01:19:39,687 - __main__ - INFO -     9. m15_stoch_d
+2025-11-03 01:19:39,687 - __main__ - INFO -    10. m15_roc_5
+2025-11-03 01:19:39,687 - __main__ - INFO -    ... and 15 more features
+2025-11-03 01:19:39,687 - __main__ - INFO - ============================================================
+2025-11-03 01:19:39,688 - __main__ - INFO - ✅ Hourly report system started
+2025-11-03 01:19:39,688 - __main__ - INFO - ✅ Trading bot initialized successfully
+2025-11-03 01:19:39,688 - __main__ - INFO - 🤖 Starting trading bot with 15 minute interval
+2025-11-03 01:19:40,710 - __main__ - INFO - 🔄 Starting trading cycle at 2025-11-03 01:19:40.710118
+2025-11-03 01:19:41,027 - __main__ - WARNING - USDT balance not found in any expected format
+2025-11-03 01:19:41,122 - __main__ - ERROR - Error calculating features: "None of ['datetime'] are in the columns"
+2025-11-03 01:19:41,127 - trade_history - ERROR - 📝 Error logged: FEATURE_CALC - "None of ['datetime'] are in the columns"
+2025-11-03 01:19:41,134 - __main__ - INFO - Trading cycle completed - Signal: 0, Confidence: MEDIUM
+2025-11-03 01:19:41,134 - __main__ - INFO - 💤 Cycle completed in 0.4s, sleeping for 899.6s
+2025-11-03 01:26:06,423 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:26:06,424 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:26:17,396 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:26:17,396 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:26:17,579 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:26:17,579 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:26:17,580 - __main__ - ERROR - Unexpected error in main loop: asyncio.run() cannot be called from a running event loop
+2025-11-03 01:26:17,588 - trade_history - ERROR - 📝 Error logged: MAIN_LOOP - asyncio.run() cannot be called from a running event loop
+2025-11-03 01:26:22,101 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:26:22,101 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:26:22,255 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:26:22,255 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:26:22,256 - root - ERROR - Failed to start trading bot: asyncio.run() cannot be called from a running event loop
+2025-11-03 01:26:35,065 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 01:26:35,067 - trade_history - INFO - ✅ Trade history database setup completed
+2025-11-03 01:26:35,068 - __main__ - INFO - ✅ Trade history manager initialized
+2025-11-03 01:26:36,531 - __main__ - INFO - ✅ OKX connection established successfully
+2025-11-03 01:26:36,531 - __main__ - INFO - ✅ Trading symbol validated: PAXG/USDT
+2025-11-03 01:26:36,532 - __main__ - INFO -    Market type: spot
+2025-11-03 01:26:36,532 - __main__ - INFO -    Spot: True
+2025-11-03 01:26:36,532 - __main__ - INFO -    Swap: False
+2025-11-03 01:26:36,533 - __main__ - INFO - ============================================================
+2025-11-03 01:26:36,533 - __main__ - INFO - 📦 LOADING ML MODELS
+2025-11-03 01:26:36,533 - __main__ - INFO - ============================================================
+2025-11-03 01:26:36,533 - __main__ - INFO - Loading model...
+2025-11-03 01:26:36,561 - __main__ - INFO -    ✅ Model type: LGBMClassifier
+2025-11-03 01:26:36,561 - __main__ - INFO - Loading scaler...
+2025-11-03 01:26:36,562 - __main__ - INFO -    ✅ Scaler type: StandardScaler
+2025-11-03 01:26:36,562 - __main__ - INFO - Loading feature columns...
+2025-11-03 01:26:36,563 - __main__ - INFO -    ✅ Number of features: 25
+2025-11-03 01:26:36,563 - __main__ - INFO - 
+2025-11-03 01:26:36,563 - __main__ - INFO - 📊 MODEL METADATA:
+2025-11-03 01:26:36,563 - __main__ - INFO -    Model Name: lightgbm
+2025-11-03 01:26:36,563 - __main__ - INFO -    Training Date: 2025-11-02T20:52:15.184574
+2025-11-03 01:26:36,564 - __main__ - INFO -    Best Score: 1.0
+2025-11-03 01:26:36,564 - __main__ - INFO -    Training Samples: 17457
+2025-11-03 01:26:36,564 - __main__ - INFO -    ✅ Feature calculator initialized
+2025-11-03 01:26:36,564 - __main__ - INFO - ============================================================
+2025-11-03 01:26:36,564 - __main__ - INFO - ✅ ML MODELS LOADED SUCCESSFULLY
+2025-11-03 01:26:36,564 - __main__ - INFO - ============================================================
+2025-11-03 01:26:36,564 - __main__ - INFO - Mode: ADVANCED ML PREDICTIONS
+2025-11-03 01:26:36,564 - __main__ - INFO - Expected Performance: 70-85% win rate
+2025-11-03 01:26:36,564 - __main__ - INFO - 
+2025-11-03 01:26:36,564 - __main__ - INFO - Feature List (Top 10):
+2025-11-03 01:26:36,565 - __main__ - INFO -     1. h1_trend_strength
+2025-11-03 01:26:36,565 - __main__ - INFO -     2. h1_trend_direction
+2025-11-03 01:26:36,565 - __main__ - INFO -     3. h1_rsi
+2025-11-03 01:26:36,565 - __main__ - INFO -     4. h1_macd
+2025-11-03 01:26:36,565 - __main__ - INFO -     5. m15_rsi_14
+2025-11-03 01:26:36,565 - __main__ - INFO -     6. m15_macd
+2025-11-03 01:26:36,565 - __main__ - INFO -     7. m15_macd_hist
+2025-11-03 01:26:36,565 - __main__ - INFO -     8. m15_stoch_k
+2025-11-03 01:26:36,565 - __main__ - INFO -     9. m15_stoch_d
+2025-11-03 01:26:36,565 - __main__ - INFO -    10. m15_roc_5
+2025-11-03 01:26:36,566 - __main__ - INFO -    ... and 15 more features
+2025-11-03 01:26:36,566 - __main__ - INFO - ============================================================
+2025-11-03 01:26:36,566 - __main__ - INFO - ✅ Hourly report system started
+2025-11-03 01:26:36,566 - __main__ - INFO - ✅ Trading bot initialized successfully
+2025-11-03 01:26:36,567 - __main__ - INFO - 🤖 Starting trading bot with 15 minute interval
+2025-11-03 01:26:37,485 - __main__ - INFO - 🔄 Starting trading cycle at 2025-11-03 01:26:37.485238
+2025-11-03 01:26:37,776 - __main__ - WARNING - USDT balance not found in any expected format
+2025-11-03 01:26:37,865 - __main__ - ERROR - Error calculating features: 'NoneType' object is not subscriptable
+2025-11-03 01:26:37,871 - trade_history - ERROR - 📝 Error logged: FEATURE_CALC - 'NoneType' object is not subscriptable
+2025-11-03 01:26:37,877 - __main__ - INFO - Trading cycle completed - Signal: 0, Confidence: MEDIUM
+2025-11-03 01:26:37,877 - __main__ - INFO - 💤 Cycle completed in 0.4s, sleeping for 899.6s
+2025-11-03 01:32:56,250 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:32:56,250 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:33:01,126 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:33:01,126 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:33:01,306 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:33:01,306 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:33:01,307 - __main__ - ERROR - Unexpected error in main loop: asyncio.run() cannot be called from a running event loop
+2025-11-03 01:33:01,320 - trade_history - ERROR - 📝 Error logged: MAIN_LOOP - asyncio.run() cannot be called from a running event loop
+2025-11-03 01:33:01,754 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:33:01,754 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:33:01,939 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:33:01,939 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:33:01,940 - root - ERROR - Failed to start trading bot: asyncio.run() cannot be called from a running event loop
+2025-11-03 01:33:10,921 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 01:33:10,923 - trade_history - INFO - ✅ Trade history database setup completed
+2025-11-03 01:33:10,924 - __main__ - INFO - ✅ Trade history manager initialized
+2025-11-03 01:33:12,440 - __main__ - INFO - ✅ OKX connection established successfully
+2025-11-03 01:33:12,440 - __main__ - INFO - ✅ Trading symbol validated: PAXG/USDT
+2025-11-03 01:33:12,440 - __main__ - INFO -    Market type: spot
+2025-11-03 01:33:12,441 - __main__ - INFO -    Spot: True
+2025-11-03 01:33:12,441 - __main__ - INFO -    Swap: False
+2025-11-03 01:33:12,441 - __main__ - INFO - ============================================================
+2025-11-03 01:33:12,441 - __main__ - INFO - 📦 LOADING ML MODELS
+2025-11-03 01:33:12,441 - __main__ - INFO - ============================================================
+2025-11-03 01:33:12,442 - __main__ - INFO - Loading model...
+2025-11-03 01:33:12,447 - __main__ - INFO -    ✅ Model type: LGBMClassifier
+2025-11-03 01:33:12,448 - __main__ - INFO - Loading scaler...
+2025-11-03 01:33:12,448 - __main__ - INFO -    ✅ Scaler type: StandardScaler
+2025-11-03 01:33:12,448 - __main__ - INFO - Loading feature columns...
+2025-11-03 01:33:12,449 - __main__ - INFO -    ✅ Number of features: 25
+2025-11-03 01:33:12,449 - __main__ - INFO - 
+2025-11-03 01:33:12,449 - __main__ - INFO - 📊 MODEL METADATA:
+2025-11-03 01:33:12,449 - __main__ - INFO -    Model Name: lightgbm
+2025-11-03 01:33:12,450 - __main__ - INFO -    Training Date: 2025-11-02T20:52:15.184574
+2025-11-03 01:33:12,450 - __main__ - INFO -    Best Score: 1.0
+2025-11-03 01:33:12,450 - __main__ - INFO -    Training Samples: 17457
+2025-11-03 01:33:12,451 - __main__ - INFO -    ✅ Feature calculator initialized
+2025-11-03 01:33:12,451 - __main__ - INFO - ============================================================
+2025-11-03 01:33:12,452 - __main__ - INFO - ✅ ML MODELS LOADED SUCCESSFULLY
+2025-11-03 01:33:12,452 - __main__ - INFO - ============================================================
+2025-11-03 01:33:12,452 - __main__ - INFO - Mode: ADVANCED ML PREDICTIONS
+2025-11-03 01:33:12,452 - __main__ - INFO - Expected Performance: 70-85% win rate
+2025-11-03 01:33:12,452 - __main__ - INFO - 
+2025-11-03 01:33:12,452 - __main__ - INFO - Feature List (Top 10):
+2025-11-03 01:33:12,452 - __main__ - INFO -     1. h1_trend_strength
+2025-11-03 01:33:12,452 - __main__ - INFO -     2. h1_trend_direction
+2025-11-03 01:33:12,452 - __main__ - INFO -     3. h1_rsi
+2025-11-03 01:33:12,453 - __main__ - INFO -     4. h1_macd
+2025-11-03 01:33:12,453 - __main__ - INFO -     5. m15_rsi_14
+2025-11-03 01:33:12,453 - __main__ - INFO -     6. m15_macd
+2025-11-03 01:33:12,453 - __main__ - INFO -     7. m15_macd_hist
+2025-11-03 01:33:12,453 - __main__ - INFO -     8. m15_stoch_k
+2025-11-03 01:33:12,453 - __main__ - INFO -     9. m15_stoch_d
+2025-11-03 01:33:12,453 - __main__ - INFO -    10. m15_roc_5
+2025-11-03 01:33:12,453 - __main__ - INFO -    ... and 15 more features
+2025-11-03 01:33:12,454 - __main__ - INFO - ============================================================
+2025-11-03 01:33:12,455 - __main__ - INFO - ✅ Hourly report system started
+2025-11-03 01:33:12,455 - __main__ - INFO - ✅ Trading bot initialized successfully
+2025-11-03 01:33:12,455 - __main__ - INFO - 🤖 Starting trading bot with 15 minute interval
+2025-11-03 01:33:13,439 - __main__ - INFO - 🔄 Starting trading cycle at 2025-11-03 01:33:13.439428
+2025-11-03 01:33:13,742 - __main__ - WARNING - USDT balance not found in any expected format
+2025-11-03 01:33:13,862 - __main__ - ERROR - Error calculating features: 'NoneType' object is not subscriptable
+2025-11-03 01:33:13,870 - trade_history - ERROR - 📝 Error logged: FEATURE_CALC - 'NoneType' object is not subscriptable
+2025-11-03 01:33:13,876 - __main__ - INFO - Trading cycle completed - Signal: 0, Confidence: MEDIUM
+2025-11-03 01:33:13,877 - __main__ - INFO - 💤 Cycle completed in 0.4s, sleeping for 899.6s
+2025-11-03 01:42:59,785 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:42:59,785 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:42:59,969 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:42:59,969 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:42:59,970 - __main__ - ERROR - Unexpected error in main loop: asyncio.run() cannot be called from a running event loop
+2025-11-03 01:42:59,976 - trade_history - ERROR - 📝 Error logged: MAIN_LOOP - asyncio.run() cannot be called from a running event loop
+2025-11-03 01:43:00,125 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:43:00,126 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:43:00,419 - __main__ - INFO - Received signal 2, shutting down...
+2025-11-03 01:43:00,420 - __main__ - INFO - 🛑 Trading bot stopping...
+2025-11-03 01:43:00,421 - root - ERROR - Failed to start trading bot: asyncio.run() cannot be called from a running event loop

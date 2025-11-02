@@ -25,6 +25,8 @@ from tensorflow.keras.regularizers import l2
 
 import talib
 from scipy import stats
+from datetime import datetime
+import json
 
 class PurgedGroupTimeSeriesSplit:
     """Time Series Cross-Validator with purging and embargo"""
@@ -71,17 +73,108 @@ class AdvancedTradingModelTrainer:
         """
         import joblib
         
-        # บันทึก best model
-        best_model = models[best_model_name]
-        joblib.dump(best_model, 'best_trading_model.pkl')
+        try:
+            # ตรวจสอบว่ามี model อยู่จริง
+            if best_model_name not in models:
+                raise ValueError(f"Model '{best_model_name}' not found in models dictionary")
+            
+            # สร้าง directory สำหรับบันทึก
+            os.makedirs('saved_models', exist_ok=True)
+            
+            # บันทึก best model
+            best_model = models[best_model_name]
+            model_path = f'saved_models/best_trading_model_{best_model_name}.pkl'
+            joblib.dump(best_model, model_path)
+            print(f"✅ Saved model: {model_path}")
+            
+            # บันทึก scaler
+            scaler_path = 'saved_models/feature_scaler.pkl'
+            joblib.dump(self.scaler, scaler_path)
+            print(f"✅ Saved scaler: {scaler_path}")
+            
+            # บันทึก feature columns
+            features_path = 'saved_models/feature_columns.pkl'
+            joblib.dump(list(self.features.columns), features_path)
+            print(f"✅ Saved features: {features_path}")
+            
+            # บันทึก metadata
+            metadata = {
+                'model_name': best_model_name,
+                'best_score': self.best_score,
+                'n_features': len(self.features.columns),
+                'n_samples': len(self.features),
+                'feature_names': list(self.features.columns),
+                'training_date': pd.Timestamp.now().isoformat()
+            }
+            metadata_path = 'saved_models/model_metadata.pkl'
+            joblib.dump(metadata, metadata_path)
+            print(f"✅ Saved metadata: {metadata_path}")
+            
+            print(f"\n🎉 All models and preprocessing objects saved successfully!")
+            print(f"📁 Location: saved_models/")
+            
+        except Exception as e:
+            print(f"❌ Error saving models: {e}")
+            raise
+
+    def save_training_report(self, results, best_params, studies):
+        """บันทึกรายงานผลการ training"""
+        import json
+        from datetime import datetime
         
-        # บันทึก scaler
-        joblib.dump(self.scaler, 'feature_scaler.pkl')
+        os.makedirs('reports', exist_ok=True)
         
-        # บันทึก feature columns
-        joblib.dump(list(self.features.columns), 'feature_columns.pkl')
+        # สร้างรายงาน
+        report = {
+            'training_date': datetime.now().isoformat(),
+            'data_info': {
+                'n_samples': len(self.features),
+                'n_features': len(self.features.columns),
+                'feature_names': list(self.features.columns),
+                'target_distribution': pd.Series(self.target).value_counts().to_dict()
+            },
+            'model_results': results,
+            'best_parameters': best_params,
+            'optimization_summary': {}
+        }
         
-        print("✅ Models and preprocessing objects saved successfully") 
+        # เพิ่มข้อมูลจาก Optuna studies
+        for model_name, study in studies.items():
+            report['optimization_summary'][model_name] = {
+                'best_value': study.best_value,
+                'best_trial': study.best_trial.number,
+                'n_trials': len(study.trials),
+                'best_params': study.best_params
+            }
+        
+        # บันทึกเป็น JSON
+        report_path = f'reports/training_report_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+        with open(report_path, 'w') as f:
+            json.dump(report, f, indent=2, default=str)
+        
+        print(f"📄 Saved training report: {report_path}")
+        
+        # บันทึกเป็น text file ที่อ่านง่าย
+        txt_path = report_path.replace('.json', '.txt')
+        with open(txt_path, 'w', encoding='utf-8') as f:
+            f.write("="*60 + "\n")
+            f.write("GOLD TRADING MODEL - TRAINING REPORT\n")
+            f.write("="*60 + "\n\n")
+            f.write(f"Training Date: {report['training_date']}\n\n")
+            
+            f.write("DATA INFORMATION:\n")
+            f.write(f"Samples: {report['data_info']['n_samples']}\n")
+            f.write(f"Features: {report['data_info']['n_features']}\n\n")
+            
+            f.write("MODEL RESULTS:\n")
+            for model, metrics in results.items():
+                f.write(f"\n{model.upper()}:\n")
+                for metric, value in metrics.items():
+                    f.write(f"  {metric}: {value}\n")
+            
+            f.write("\n" + "="*60 + "\n")
+        
+        print(f"📄 Saved text report: {txt_path}")
 
     def load_and_preprocess_data(self):
         """
@@ -474,18 +567,20 @@ class AdvancedTradingModelTrainer:
     def objective_random_forest(self, trial):
         """Random Forest optimization สำหรับ trading"""
         
+        bootstrap = trial.suggest_categorical('bootstrap', [True, False])
+        
         params = {
             'n_estimators': trial.suggest_int('n_estimators', 100, 500),
             'max_depth': trial.suggest_categorical('max_depth', [10, 20, 30, 40, None]),
             'min_samples_split': trial.suggest_int('min_samples_split', 2, 20),
             'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 10),
             'max_features': trial.suggest_categorical('max_features', ['sqrt', 'log2', None]),
-            'bootstrap': trial.suggest_categorical('bootstrap', [True, False]),
+            'bootstrap': bootstrap,
             'class_weight': trial.suggest_categorical('class_weight', [None, 'balanced', 'balanced_subsample'])
         }
         
         # เพิ่ม max_samples เฉพาะเมื่อ bootstrap=True
-        if params['bootstrap']:
+        if bootstrap:
             params['max_samples'] = trial.suggest_float('max_samples', 0.6, 1.0)
         
         # Remove None values
@@ -510,11 +605,12 @@ class AdvancedTradingModelTrainer:
             'reg_lambda': trial.suggest_float('reg_lambda', 1e-8, 10.0, log=True),
             'min_split_gain': trial.suggest_float('min_split_gain', 0.0, 1.0),
             'boosting_type': trial.suggest_categorical('boosting_type', ['gbdt', 'dart']),
+            'is_unbalance': True,  # เพิ่มเพื่อจัดการ class imbalance
             'objective': 'multiclass',
             'metric': 'multi_logloss'
         }
         
-        model = LGBMClassifier(**params, random_state=42, n_jobs=-1)
+        model = LGBMClassifier(**params, random_state=42, n_jobs=-1, verbose=-1)
         
         return self._cross_validate_model(model, self.features, self.target)
     
@@ -777,9 +873,17 @@ class AdvancedTradingModelTrainer:
             # Remove parameters that might cause issues
             lgb_params.pop('objective', None)
             lgb_params.pop('metric', None)
+            lgb_params.pop('is_unbalance', None)
             # เพิ่ม num_class สำหรับ multi-class classification
-            lgb_params['num_class'] = 3
-            best_lgb = LGBMClassifier(**lgb_params, random_state=42, n_jobs=-1, verbose=-1)
+            best_lgb = LGBMClassifier(
+                **lgb_params, 
+                objective='multiclass',
+                num_class=3,
+                is_unbalance=True,
+                random_state=42, 
+                n_jobs=-1, 
+                verbose=-1
+            )
             best_lgb.fit(self.features, self.target)
             best_models['lightgbm'] = best_lgb
         
@@ -928,32 +1032,85 @@ def main():
     trainer = AdvancedTradingModelTrainer(data_path='historical_data/PAXG-USDT_15min_20230101-20251018.csv')
     
     # โหลดและเตรียมข้อมูล
-    print("Loading and preprocessing multi-timeframe data...")
+    print("\n" + "="*60)
+    print("STEP 1: LOADING DATA")
+    print("="*60)
     features, target = trainer.load_and_preprocess_data()
     
     # Auto tuning
-    print("Starting advanced auto-tuning...")
+    print("\n" + "="*60)
+    print("STEP 2: AUTO-TUNING MODELS")
+    print("="*60)
     studies, best_params = trainer.advanced_auto_tune(n_trials=50)
     
     # วิเคราะห์ผลลัพธ์ tuning
+    print("\n" + "="*60)
+    print("STEP 3: ANALYZING TUNING RESULTS")
+    print("="*60)
     trainer.analyze_optuna_results(studies)
     
     # Training ด้วย best parameters
-    print("Training models with best parameters...")
+    print("\n" + "="*60)
+    print("STEP 4: TRAINING FINAL MODELS")
+    print("="*60)
     best_models = trainer.train_models_with_best_params(best_params)
     
     # Evaluation
-    print("Evaluating strategy performance...")
+    print("\n" + "="*60)
+    print("STEP 5: EVALUATING PERFORMANCE")
+    print("="*60)
     results = trainer.evaluate_strategy_performance(best_models)
     
-    # บันทึกโมเดลที่ดีที่สุด
-    if results and trainer.best_model is not None:
-        best_model_name = max(results, key=lambda x: results[x]['success_rate'])
-        print(f"\n💾 Saving best model ({best_model_name})...")
-        trainer.save_models(best_models, best_model_name)
+    # บันทึกผลลัพธ์
+    print("\n" + "="*60)
+    print("STEP 6: SAVING RESULTS")
+    print("="*60)
     
-    print(f"\n✅ Training completed! Best model success rate: {trainer.best_score:.4f}")
-
+    if results and best_models:
+        # หา best model
+        best_model_name = max(results, key=lambda x: results[x]['success_rate'])
+        
+        # บันทึก models
+        print(f"\n💾 Saving best model ({best_model_name})...")
+        print(f"🎯 Best success rate: {results[best_model_name]['success_rate']:.4f}")
+        trainer.save_models(best_models, best_model_name)
+        
+        # บันทึกรายงาน
+        print("\n📊 Generating training report...")
+        trainer.save_training_report(results, best_params, studies)
+        
+        # บันทึกข้อมูลเพิ่มเติม
+        import joblib
+        os.makedirs('saved_models', exist_ok=True)
+        
+        joblib.dump(results, 'saved_models/model_results.pkl')
+        joblib.dump(best_params, 'saved_models/best_params.pkl')
+        joblib.dump(studies, 'saved_models/optuna_studies.pkl')
+        
+        print("✅ Saved all results and parameters")
+        
+        # สรุปผล
+        print("\n" + "="*60)
+        print("TRAINING SUMMARY")
+        print("="*60)
+        print(f"✅ Training completed successfully!")
+        print(f"🏆 Best Model: {best_model_name}")
+        print(f"🎯 Success Rate: {results[best_model_name]['success_rate']:.4f}")
+        print(f"📊 Accuracy: {results[best_model_name]['accuracy']:.4f}")
+        print(f"📈 F1-Score: {results[best_model_name]['f1_score']:.4f}")
+        print(f"\n📁 Saved files:")
+        print(f"   - saved_models/best_trading_model_{best_model_name}.pkl")
+        print(f"   - saved_models/feature_scaler.pkl")
+        print(f"   - saved_models/feature_columns.pkl")
+        print(f"   - saved_models/model_metadata.pkl")
+        print(f"   - reports/training_report_*.json")
+        print(f"   - reports/training_report_*.txt")
+        print("="*60)
+        
+    else:
+        print("⚠️ WARNING: No models trained or evaluated!")
+        print("Check if data was loaded correctly and models were created.")
+    
     return trainer, best_models, results, studies
 
 if __name__ == "__main__":

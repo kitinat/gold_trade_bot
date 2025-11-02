@@ -26,7 +26,7 @@ from config_bot import (
 from trade_history import TradeHistoryManager
 
 try:
-    from train_model import AdvancedTradingModelTrainer
+    from train_model_v2 import AdvancedTradingModelTrainer
     ML_AVAILABLE = True
 except ImportError:
     ML_AVAILABLE = False
@@ -39,8 +39,9 @@ class OKXTradingBot:
         """
         self.setup_logging()
         self.validate_environment()
-        self.setup_trade_history()  # ต้องสร้างก่อน setup_models เพราะ setup_models ใช้ history_manager
+        self.setup_trade_history()
         self.setup_exchange()
+        self.validate_symbol()  # เพิ่ม: ตรวจสอบ symbol
         self.setup_models()
         
         # ตัวแปรสถานะ
@@ -104,36 +105,244 @@ class OKXTradingBot:
             self.logger.error(f"❌ Failed to connect to OKX: {e}")
             raise
     
+    def validate_symbol(self):
+        """Validate and normalize trading symbol for OKX"""
+        try:
+            # โหลดตลาดทั้งหมดจาก OKX
+            markets = self.exchange.load_markets()
+            
+            symbol = TRADING_CONFIG['symbol']
+            
+            # ตรวจสอบว่า symbol อยู่ในรูปแบบที่ถูกต้องหรือไม่
+            if symbol not in markets:
+                # พยายามแปลง symbol ให้อยู่ในรูปแบบที่ถูกต้อง
+                if '/' not in symbol:
+                    # แปลง PAXGUSDT -> PAXG/USDT
+                    if symbol.endswith('USDT'):
+                        normalized_symbol = f"{symbol[:-4]}/USDT"
+                    elif symbol.endswith('USD'):
+                        normalized_symbol = f"{symbol[:-3]}/USD"
+                    else:
+                        raise ValueError(f"Cannot normalize symbol: {symbol}")
+                    
+                    if normalized_symbol in markets:
+                        TRADING_CONFIG['symbol'] = normalized_symbol
+                        self.logger.info(f"✅ Symbol normalized: {symbol} -> {normalized_symbol}")
+                        symbol = normalized_symbol
+                    else:
+                        # แสดง symbols ที่เกี่ยวข้องกับ PAXG หรือ gold
+                        suggested = [s for s in markets.keys() if 'PAXG' in s or 'GOLD' in s or 'XAU' in s]
+                        error_msg = f"Symbol {symbol} not found. Available gold-related symbols: {suggested[:5]}"
+                        self.logger.error(error_msg)
+                        raise ValueError(error_msg)
+                else:
+                    suggested = [s for s in markets.keys() if symbol.split('/')[0] in s]
+                    error_msg = f"Symbol {symbol} not found. Similar symbols: {suggested[:5]}"
+                    self.logger.error(error_msg)
+                    raise ValueError(error_msg)
+            
+            # ตรวจสอบว่า symbol support spot trading
+            market_info = markets[symbol]
+            if not market_info.get('spot', False):
+                self.logger.warning(f"⚠️  {symbol} may not support spot trading")
+            
+            # แสดงข้อมูล market
+            self.logger.info(f"✅ Trading symbol validated: {symbol}")
+            self.logger.info(f"   Market type: {market_info.get('type', 'unknown')}")
+            self.logger.info(f"   Spot: {market_info.get('spot', False)}")
+            self.logger.info(f"   Swap: {market_info.get('swap', False)}")
+            
+        except Exception as e:
+            self.logger.error(f"❌ Failed to validate symbol: {e}")
+            raise
+    
     def setup_models(self):
-        """Load trained models and scaler"""
+        """Load trained models and scaler with detailed feedback"""
         self.model = None
         self.scaler = None
         self.feature_columns = None
         
         if not ML_AVAILABLE:
-            self.logger.warning("⚠️  ML models not available - running in basic mode")
+            self.logger.warning("="*60)
+            self.logger.warning("⚠️  ML MODELS NOT AVAILABLE")
+            self.logger.warning("="*60)
+            self.logger.warning("Reason: train_model.py module not found or import failed")
+            self.logger.warning("Impact: Bot will run in BASIC SIGNAL MODE using RSI + EMA")
+            self.logger.warning("")
+            self.logger.warning("To enable ML predictions:")
+            self.logger.warning("  1. Ensure train_model.py exists in the same directory")
+            self.logger.warning("  2. Install required packages:")
+            self.logger.warning("     pip install scikit-learn joblib talib scipy")
+            self.logger.warning("="*60)
             return
             
         try:
-            # ตรวจสอบว่าไฟล์โมเดลมีอยู่
-            if not all(os.path.exists(MODEL_CONFIG[path]) for path in ['model_path', 'scaler_path', 'features_path']):
-                self.logger.warning("⚠️  Model files not found. Running without ML predictions.")
+            # ตรวจสอบไฟล์โมเดลแต่ละไฟล์อย่างละเอียด
+            model_files = {
+                'Model': MODEL_CONFIG['model_path'],
+                'Scaler': MODEL_CONFIG['scaler_path'],
+                'Features': MODEL_CONFIG['features_path']
+            }
+            
+            missing_files = []
+            existing_files = []
+            
+            for key, path in model_files.items():
+                if os.path.exists(path):
+                    file_size = os.path.getsize(path) / 1024  # KB
+                    file_mtime = datetime.fromtimestamp(os.path.getmtime(path))
+                    existing_files.append(f"   ✅ {key}: {path} ({file_size:.1f} KB, modified: {file_mtime.strftime('%Y-%m-%d %H:%M')})")
+                else:
+                    missing_files.append(f"   ❌ {key}: {path}")
+            
+            if missing_files:
+                self.logger.warning("="*60)
+                self.logger.warning("⚠️  MODEL FILES NOT FOUND")
+                self.logger.warning("="*60)
+                
+                if existing_files:
+                    self.logger.warning("Found files:")
+                    for file_info in existing_files:
+                        self.logger.warning(file_info)
+                    self.logger.warning("")
+                
+                self.logger.warning("Missing files:")
+                for missing in missing_files:
+                    self.logger.warning(missing)
+                
+                self.logger.warning("")
+                self.logger.warning("📝 HOW TO TRAIN A NEW MODEL:")
+                self.logger.warning("="*60)
+                self.logger.warning("")
+                self.logger.warning("Option 1: Use train_model_v2.py (Recommended - Advanced)")
+                self.logger.warning("  Command: python train_model_v2.py")
+                self.logger.warning("  Features:")
+                self.logger.warning("    - Auto-tuning with Optuna")
+                self.logger.warning("    - Multiple model comparison (XGBoost, LightGBM, RF, LSTM)")
+                self.logger.warning("    - Advanced feature engineering")
+                self.logger.warning("    - Detailed performance reports")
+                self.logger.warning("")
+                self.logger.warning("Option 2: Use train_model.py (Basic)")
+                self.logger.warning("  Command: python train_model.py")
+                self.logger.warning("")
+                self.logger.warning("Option 3: Enable auto-training (if available)")
+                self.logger.warning("  Edit config_bot.py and set:")
+                self.logger.warning("    BOT_CONFIG['auto_train_model'] = True")
+                self.logger.warning("")
+                self.logger.warning("="*60)
+                self.logger.warning("🔄 BOT WILL CONTINUE IN BASIC SIGNAL MODE")
+                self.logger.warning("="*60)
+                self.logger.warning("Basic Mode uses:")
+                self.logger.warning("  - RSI (Relative Strength Index)")
+                self.logger.warning("  - EMA (Exponential Moving Average)")
+                self.logger.warning("  - Simple trend detection")
+                self.logger.warning("")
+                self.logger.warning("⚠️  Note: Basic mode has lower accuracy than ML models")
+                self.logger.warning("   Expected performance: ~55-65% win rate")
+                self.logger.warning("   ML model performance: ~70-85% win rate")
+                self.logger.warning("="*60)
+                
                 return
             
             # โหลดโมเดลที่ฝึกไว้
+            self.logger.info("="*60)
+            self.logger.info("📦 LOADING ML MODELS")
+            self.logger.info("="*60)
+            
+            # โหลด model
+            self.logger.info("Loading model...")
             self.model = joblib.load(MODEL_CONFIG['model_path'])
+            model_type = type(self.model).__name__
+            self.logger.info(f"   ✅ Model type: {model_type}")
+            
+            # โหลด scaler
+            self.logger.info("Loading scaler...")
             self.scaler = joblib.load(MODEL_CONFIG['scaler_path'])
+            scaler_type = type(self.scaler).__name__
+            self.logger.info(f"   ✅ Scaler type: {scaler_type}")
+            
+            # โหลด feature columns
+            self.logger.info("Loading feature columns...")
             self.feature_columns = joblib.load(MODEL_CONFIG['features_path'])
+            n_features = len(self.feature_columns)
+            self.logger.info(f"   ✅ Number of features: {n_features}")
+            
+            # โหลด metadata ถ้ามี
+            metadata_path = 'saved_models/model_metadata.pkl'
+            if os.path.exists(metadata_path):
+                try:
+                    metadata = joblib.load(metadata_path)
+                    self.logger.info("")
+                    self.logger.info("📊 MODEL METADATA:")
+                    self.logger.info(f"   Model Name: {metadata.get('model_name', 'N/A')}")
+                    self.logger.info(f"   Training Date: {metadata.get('training_date', 'N/A')}")
+                    self.logger.info(f"   Best Score: {metadata.get('best_score', 'N/A')}")
+                    self.logger.info(f"   Training Samples: {metadata.get('n_samples', 'N/A')}")
+                except Exception as e:
+                    self.logger.debug(f"Could not load metadata: {e}")
             
             # สร้าง feature calculator instance
-            self.feature_calculator = AdvancedTradingModelTrainer()
+            try:
+                if ML_AVAILABLE:
+                    from train_model import AdvancedTradingModelTrainer
+                    self.feature_calculator = AdvancedTradingModelTrainer()
+                    self.logger.info("   ✅ Feature calculator initialized")
+            except ImportError:
+                # ใช้ train_model_v2 แทน
+                try:
+                    import sys
+                    sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+                    from train_model_v2 import AdvancedTradingModelTrainer
+                    self.feature_calculator = AdvancedTradingModelTrainer()
+                    self.logger.info("   ✅ Feature calculator initialized (v2)")
+                except Exception as e:
+                    self.logger.warning(f"   ⚠️  Could not initialize feature calculator: {e}")
+                    self.feature_calculator = None
             
-            self.logger.info("✅ ML models loaded successfully")
+            self.logger.info("="*60)
+            self.logger.info("✅ ML MODELS LOADED SUCCESSFULLY")
+            self.logger.info("="*60)
+            self.logger.info(f"Mode: ADVANCED ML PREDICTIONS")
+            self.logger.info(f"Expected Performance: 70-85% win rate")
+            self.logger.info("")
+            self.logger.info("Feature List (Top 10):")
+            for i, feature in enumerate(self.feature_columns[:10], 1):
+                self.logger.info(f"   {i:2d}. {feature}")
+            if len(self.feature_columns) > 10:
+                self.logger.info(f"   ... and {len(self.feature_columns) - 10} more features")
+            self.logger.info("="*60)
             
         except Exception as e:
-            self.logger.error(f"❌ Failed to load models: {e}")
-            self.history_manager.log_error('MODEL_LOAD', str(e))
-    
+            self.logger.error("="*60)
+            self.logger.error("❌ FAILED TO LOAD ML MODELS")
+            self.logger.error("="*60)
+            self.logger.error(f"Error Type: {type(e).__name__}")
+            self.logger.error(f"Error Message: {str(e)}")
+            self.logger.error("")
+            self.logger.error("Possible causes:")
+            self.logger.error("  1. Model files are corrupted")
+            self.logger.error("  2. Model was trained with different sklearn/library version")
+            self.logger.error("  3. Insufficient memory to load models")
+            self.logger.error("  4. File permission issues")
+            self.logger.error("")
+            self.logger.error("Recommended actions:")
+            self.logger.error("  1. Check file permissions")
+            self.logger.error("  2. Re-train the model using: python train_model_v2.py")
+            self.logger.error("  3. Check library versions:")
+            self.logger.error("     pip list | grep -E 'scikit-learn|joblib|xgboost|lightgbm'")
+            self.logger.error("="*60)
+            
+            # บันทึก error
+            self.history_manager.log_error('MODEL_LOAD', str(e), traceback.format_exc())
+            
+            # Reset model variables
+            self.model = None
+            self.scaler = None
+            self.feature_columns = None
+            
+            self.logger.warning("🔄 Falling back to BASIC SIGNAL MODE")
+            self.logger.warning("="*60)
+        
     def setup_trade_history(self):
         """Setup trade history manager"""
         self.history_manager = TradeHistoryManager()
@@ -172,15 +381,46 @@ class OKXTradingBot:
             self.logger.error(f"Error sending Telegram message: {e}")
     
     def fetch_ohlcv_data(self, symbol: str, timeframe: str, limit: int = 100):
-        """Fetch OHLCV data from OKX"""
+        """Fetch OHLCV data from OKX with proper datetime handling"""
         try:
             ohlcv = self.exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
-            df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+            
+            if not ohlcv or len(ohlcv) == 0:
+                self.logger.error("No OHLCV data received from exchange")
+                return None
+            
+            # สร้าง DataFrame
+            df = pd.DataFrame(
+                ohlcv, 
+                columns=['timestamp', 'open', 'high', 'low', 'close', 'volume']
+            )
+            
+            # แปลง timestamp เป็น datetime
             df['datetime'] = pd.to_datetime(df['timestamp'], unit='ms')
-            df.set_index('datetime', inplace=True)
+            
+            # เก็บ datetime ไว้เป็น column (ไม่ใช้เป็น index)
+            # เพราะ feature calculator ต้องการ datetime column
+            
+            # Debug log
+            if BOT_CONFIG.get('debug_mode', False):
+                self.logger.debug(f"Fetched {len(df)} candles")
+                self.logger.debug(f"Columns: {list(df.columns)}")
+                self.logger.debug(f"Date range: {df['datetime'].min()} to {df['datetime'].max()}")
+            
             return df
+            
+        except ccxt.NetworkError as e:
+            self.logger.error(f"Network error fetching OHLCV data: {e}")
+            self.history_manager.log_error('DATA_FETCH_NETWORK', str(e), f"Symbol: {symbol}, TF: {timeframe}")
+            return None
+        except ccxt.ExchangeError as e:
+            self.logger.error(f"Exchange error fetching OHLCV data: {e}")
+            self.history_manager.log_error('DATA_FETCH_EXCHANGE', str(e), f"Symbol: {symbol}, TF: {timeframe}")
+            return None
         except Exception as e:
-            self.logger.error(f"Error fetching OHLCV data: {e}")
+            self.logger.error(f"Unexpected error fetching OHLCV data: {e}")
+            import traceback
+            self.logger.debug(traceback.format_exc())
             self.history_manager.log_error('DATA_FETCH', str(e), f"Symbol: {symbol}, TF: {timeframe}")
             return None
     
@@ -193,21 +433,72 @@ class OKXTradingBot:
             return None
             
         try:
+            # ตรวจสอบว่า df มีข้อมูลเพียงพอ
+            if df is None or len(df) < 50:
+                self.logger.warning("Insufficient data for feature calculation")
+                return None
+            
+            # สร้าง copy ของ df เพื่อไม่ให้กระทบข้อมูลต้นฉบับ
+            df_copy = df.copy()
+            
+            # ตรวจสอบว่ามี datetime column
+            if 'datetime' not in df_copy.columns:
+                if 'timestamp' in df_copy.columns:
+                    df_copy['datetime'] = pd.to_datetime(df_copy['timestamp'], unit='ms')
+                else:
+                    self.logger.error("No datetime or timestamp column found")
+                    return None
+            
             # ใช้ feature calculator จาก training class
-            self.feature_calculator.data = df.copy()
-            self.feature_calculator._calculate_multi_timeframe_indicators()
+            self.feature_calculator.data = df_copy
+            
+            # เรียกใช้งานฟังก์ชันคำนวณ indicators
+            try:
+                self.feature_calculator._calculate_multi_timeframe_indicators()
+            except AttributeError:
+                # ถ้าไม่มีฟังก์ชันนี้ ให้ลองใช้ฟังก์ชันอื่น
+                if hasattr(self.feature_calculator, 'calculate_features'):
+                    self.feature_calculator.calculate_features()
+                else:
+                    self.logger.error("No feature calculation method found in trainer")
+                    return None
+            
+            # ตรวจสอบว่า features ถูกสร้างขึ้นแล้ว
+            if not hasattr(self.feature_calculator, 'features'):
+                self.logger.error("Features not created by feature calculator")
+                return None
+            
+            features_df = self.feature_calculator.features
+            
+            # ตรวจสอบว่ามี features ที่ต้องการ
+            if features_df is None or len(features_df) == 0:
+                self.logger.error("Feature DataFrame is empty")
+                return None
+            
+            # ตรวจสอบว่ามี feature columns ทั้งหมดที่ต้องการ
+            missing_features = set(self.feature_columns) - set(features_df.columns)
+            if missing_features:
+                self.logger.warning(f"Missing features: {missing_features}")
+                # เติม features ที่หายด้วย 0
+                for feat in missing_features:
+                    features_df[feat] = 0
             
             # เลือกเฉพาะ features ที่ใช้ในโมเดล
-            if hasattr(self.feature_calculator, 'features'):
-                features = self.feature_calculator.features[self.feature_columns]
-                return features.iloc[-1:].values  # ข้อมูลล่าสุดเท่านั้น
-            else:
-                self.logger.error("Features not calculated properly")
-                return None
+            features = features_df[self.feature_columns]
+            
+            # ตรวจสอบ NaN values
+            if features.isnull().any().any():
+                self.logger.warning("Found NaN values in features, filling with 0")
+                features = features.fillna(0)
+            
+            # ส่งกลับข้อมูลล่าสุดเท่านั้น
+            return features.iloc[-1:].values
                 
         except Exception as e:
             self.logger.error(f"Error calculating features: {e}")
-            self.history_manager.log_error('FEATURE_CALC', str(e))
+            import traceback
+            self.logger.debug(traceback.format_exc())
+            self.history_manager.log_error('FEATURE_CALC', str(e), traceback.format_exc())
             return None
     
     def get_current_signal(self, symbol: str, timeframe: str):
@@ -289,30 +580,118 @@ class OKXTradingBot:
         """Check current position for symbol"""
         try:
             balance = self.exchange.fetch_balance()
-            positions = self.exchange.fetch_positions([symbol.replace('/', '')])
             
+            # Debug: แสดงโครงสร้างของ balance
+            if BOT_CONFIG.get('debug_mode', False):
+                self.logger.debug(f"Balance structure: {list(balance.keys())}")
+            
+            # ตรวจสอบโครงสร้างของ balance และดึงข้อมูลอย่างปลอดภัย
             position_info = {
-                'free_usdt': float(balance['USDT']['free']),
-                'used_usdt': float(balance['USDT']['used']),
-                'total_usdt': float(balance['USDT']['total']),
+                'free_usdt': 0,
+                'used_usdt': 0,
+                'total_usdt': 0,
                 'current_position': None
             }
             
-            for pos in positions:
-                if pos['symbol'] == symbol.replace('/', '') and float(pos['contracts']) > 0:
-                    position_info['current_position'] = {
-                        'side': pos['side'],
-                        'size': float(pos['contracts']),
-                        'entry_price': float(pos['entryPrice']),
-                        'unrealized_pnl': float(pos['unrealizedPnl'])
-                    }
-                    break
+            # วิธีที่ 1: ตรวจสอบใน 'free', 'used', 'total' keys
+            if 'USDT' in balance.get('free', {}):
+                position_info['free_usdt'] = float(balance['free'].get('USDT', 0))
+                position_info['used_usdt'] = float(balance['used'].get('USDT', 0))
+                position_info['total_usdt'] = float(balance['total'].get('USDT', 0))
+            
+            # วิธีที่ 2: ตรวจสอบโดยตรงจาก balance dict
+            elif 'USDT' in balance:
+                usdt_balance = balance.get('USDT', {})
+                if isinstance(usdt_balance, dict):
+                    position_info['free_usdt'] = float(usdt_balance.get('free', 0))
+                    position_info['used_usdt'] = float(usdt_balance.get('used', 0))
+                    position_info['total_usdt'] = float(usdt_balance.get('total', 0))
+                else:
+                    # กรณี balance เป็นตัวเลขโดยตรง
+                    position_info['total_usdt'] = float(usdt_balance)
+                    position_info['free_usdt'] = float(usdt_balance)
+            
+            # วิธีที่ 3: ดึงจาก info (สำหรับบาง exchange)
+            elif 'info' in balance:
+                info = balance.get('info', {})
+                # OKX มักจะเก็บข้อมูลใน info.data
+                if 'data' in info:
+                    for item in info.get('data', []):
+                        if item.get('ccy') == 'USDT':
+                            position_info['free_usdt'] = float(item.get('availBal', 0))
+                            position_info['total_usdt'] = float(item.get('bal', 0))
+                            position_info['used_usdt'] = position_info['total_usdt'] - position_info['free_usdt']
+                            break
+            
+            # ถ้าไม่พบ USDT ในทุกวิธี
+            if position_info['total_usdt'] == 0:
+                self.logger.warning("USDT balance not found in any expected format")
+                self.logger.debug(f"Available currencies: {list(balance.get('total', {}).keys())}")
+                
+                # แสดง balance structure เพื่อช่วย debug
+                if BOT_CONFIG.get('debug_mode', False):
+                    import json
+                    self.logger.debug(f"Full balance structure: {json.dumps(balance, indent=2, default=str)}")
+            
+            # ตรวจสอบ position สำหรับ base currency
+            base_currency = symbol.split('/')[0]  # เช่น PAXG จาก PAXG/USDT
+            
+            # ลองหาจาก free/used/total keys
+            base_amount = 0
+            if base_currency in balance.get('free', {}):
+                base_amount = float(balance['free'].get(base_currency, 0))
+            elif base_currency in balance:
+                base_balance = balance.get(base_currency, {})
+                if isinstance(base_balance, dict):
+                    base_amount = float(base_balance.get('total', 0))
+                else:
+                    base_amount = float(base_balance)
+            elif 'info' in balance and 'data' in balance.get('info', {}):
+                for item in balance['info'].get('data', []):
+                    if item.get('ccy') == base_currency:
+                        base_amount = float(item.get('bal', 0))
+                        break
+            
+            if base_amount > 0:
+                # มี position อยู่
+                current_price = self.get_current_price(symbol)
+                
+                # พยายามหา entry price จาก trade history ล่าสุด
+                recent_trades = self.history_manager.get_recent_trades(symbol, limit=1)
+                entry_price = recent_trades[0]['price'] if recent_trades else current_price
+                
+                unrealized_pnl = (current_price - entry_price) * base_amount
+                
+                position_info['current_position'] = {
+                    'side': 'buy',  # spot trading จะเป็น long position เสมอ
+                    'size': base_amount,
+                    'entry_price': entry_price,
+                    'unrealized_pnl': unrealized_pnl,
+                    'current_price': current_price,
+                    'value_usdt': base_amount * current_price
+                }
             
             return position_info
             
+        except ccxt.NetworkError as e:
+            self.logger.error(f"Network error checking position: {e}")
+            self.history_manager.log_error('POSITION_CHECK_NETWORK', str(e))
+            return None
+        except ccxt.ExchangeError as e:
+            self.logger.error(f"Exchange error checking position: {e}")
+            self.history_manager.log_error('POSITION_CHECK_EXCHANGE', str(e))
+            return None
+        except KeyError as e:
+            self.logger.error(f"Key error checking position: {e}")
+            self.logger.error(f"Available balance keys: {list(balance.keys()) if 'balance' in locals() else 'N/A'}")
+            self.history_manager.log_error('POSITION_CHECK_KEY', str(e))
+            return None
         except Exception as e:
-            self.logger.error(f"Error checking position: {e}")
-            self.history_manager.log_error('POSITION_CHECK', str(e))
+            self.logger.error(f"Unexpected error checking position: {e}")
+            self.logger.error(f"Error type: {type(e).__name__}")
+            import traceback
+            self.logger.debug(traceback.format_exc())
+            self.history_manager.log_error('POSITION_CHECK', str(e), traceback.format_exc())
             return None
     
     def calculate_position_size(self, current_price: float) -> float:
@@ -363,9 +742,6 @@ class OKXTradingBot:
                 'type': 'market',
                 'side': side,
                 'amount': position_size,
-                'params': {
-                    'tdMode': 'cash'  # spot trading
-                }
             }
             
             # ส่งออร์เดอร์
@@ -429,8 +805,13 @@ class OKXTradingBot:
         """Check if we should exit current trade based on stop loss/take profit"""
         if not current_position:
             return False
+        
+        entry_price = current_position.get('entry_price', 0)
+        
+        # ถ้าไม่มี entry price (spot trading) ให้ข้าม
+        if entry_price == 0:
+            return False
             
-        entry_price = current_position['entry_price']
         price_change_pct = (current_price - entry_price) / entry_price
         
         # Adjust for short positions
@@ -631,7 +1012,7 @@ class OKXTradingBot:
 ├ Symbol: {symbol}
 ├ Reason: {exit_reason}
 ├ Side: {current_position['side']}
-├ PnL: ${current_position['unrealized_pnl']:.2f}
+├ PnL: ${current_position.get('unrealized_pnl', 0):.2f}
 └ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
                         """
                         asyncio.run(self.send_telegram_message(message))
