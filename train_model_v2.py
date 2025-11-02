@@ -6,6 +6,7 @@ warnings.filterwarnings('ignore')
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.svm import SVC
 from xgboost import XGBClassifier
+from lightgbm import LGBMClassifier
 from sklearn.model_selection import train_test_split, TimeSeriesSplit
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, f1_score
 from sklearn.preprocessing import StandardScaler
@@ -13,6 +14,7 @@ from sklearn.utils.class_weight import compute_class_weight
 
 import optuna
 from optuna.samplers import TPESampler
+from optuna.pruners import HyperbandPruner
 import os
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
@@ -23,6 +25,35 @@ from tensorflow.keras.regularizers import l2
 
 import talib
 from scipy import stats
+
+class PurgedGroupTimeSeriesSplit:
+    """Time Series Cross-Validator with purging and embargo"""
+    def __init__(self, n_splits=5, group_gap=1):
+        self.n_splits = n_splits
+        self.group_gap = group_gap
+
+    def split(self, X, y=None, groups=None):
+        n_samples = len(X)
+        indices = np.arange(n_samples)
+        fold_size = n_samples // (self.n_splits + 1)
+        gaps = self.group_gap
+
+        for i in range(self.n_splits):
+            # Train ใช้ข้อมูลตั้งแต่ต้นจนถึง fold ปัจจุบัน
+            train_start = 0
+            train_end = (i + 1) * fold_size
+            
+            # Test อยู่หลังจาก train พร้อม gap
+            test_start = train_end + gaps
+            test_end = min(test_start + fold_size, n_samples)
+
+            if test_start >= n_samples:
+                continue
+
+            train_indices = indices[train_start:train_end]
+            test_indices = indices[test_start:test_end]
+
+            yield train_indices, test_indices
 
 class AdvancedTradingModelTrainer:
     def __init__(self, data_path=None):
@@ -50,7 +81,7 @@ class AdvancedTradingModelTrainer:
         # บันทึก feature columns
         joblib.dump(list(self.features.columns), 'feature_columns.pkl')
         
-        print("✅ Models and preprocessing objects saved successfully")
+        print("✅ Models and preprocessing objects saved successfully") 
 
     def load_and_preprocess_data(self):
         """
@@ -377,42 +408,115 @@ class AdvancedTradingModelTrainer:
         
         return np.array(X_seq), np.array(y_seq)
     
-    def objective_advanced_xgboost(self, trial):
-        """Advanced XGBoost optimization สำหรับ trading strategy"""
-        X_train, X_test, y_train, y_test = train_test_split(
-            self.features, self.target, test_size=0.2, 
-            random_state=42, stratify=self.target
+    def _create_time_groups(self, period='D'):
+        """สร้าง groups ตามเวลาเพื่อป้องกัน data leakage"""
+        if hasattr(self, 'data') and self.data is not None:
+            dates = self.data['datetime'].dt.to_period(period)
+            return dates.astype('category').cat.codes.values
+        return np.arange(len(self.features))
+    
+    def _cross_validate_model(self, model, X, y, n_splits=3):
+        """ฟังก์ชันร่วมสำหรับ cross-validation"""
+        
+        tscv = PurgedGroupTimeSeriesSplit(
+            n_splits=n_splits,
+            group_gap=5
         )
         
+        scores = []
+        groups = self._create_time_groups()
+        
+        for train_idx, val_idx in tscv.split(X, groups=groups):
+            X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
+            y_train, y_val = y[train_idx], y[val_idx]
+            
+            model.fit(X_train, y_train)
+            y_pred = model.predict(X_val)
+            
+            # ใช้ multiple metrics
+            accuracy = accuracy_score(y_val, y_pred)
+            f1 = f1_score(y_val, y_pred, average='weighted')
+            
+            # รวมคะแนน (weighted combination)
+            combined_score = 0.7 * f1 + 0.3 * accuracy
+            scores.append(combined_score)
+        
+        return np.mean(scores)
+    
+    def objective_advanced_xgboost(self, trial):
+        """Advanced XGBoost optimization สำหรับ trading strategy"""
+        
+        # สร้าง parameter space ที่ครอบคลุม
         params = {
-            'n_estimators': trial.suggest_int('n_estimators', 100, 500),
-            'max_depth': trial.suggest_int('max_depth', 4, 12),
-            'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3, log=True),
+            'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+            'max_depth': trial.suggest_int('max_depth', 3, 12),
+            'learning_rate': trial.suggest_float('learning_rate', 0.001, 0.3, log=True),
             'subsample': trial.suggest_float('subsample', 0.6, 1.0),
             'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0),
             'colsample_bylevel': trial.suggest_float('colsample_bylevel', 0.6, 1.0),
-            'reg_alpha': trial.suggest_float('reg_alpha', 0, 2),
-            'reg_lambda': trial.suggest_float('reg_lambda', 0, 2),
-            'min_child_weight': trial.suggest_int('min_child_weight', 1, 10),
-            'gamma': trial.suggest_float('gamma', 0, 1),
-            'scale_pos_weight': trial.suggest_float('scale_pos_weight', 0.5, 3.0)
+            'colsample_bynode': trial.suggest_float('colsample_bynode', 0.6, 1.0),
+            'reg_alpha': trial.suggest_float('reg_alpha', 1e-8, 10.0, log=True),
+            'reg_lambda': trial.suggest_float('reg_lambda', 1e-8, 10.0, log=True),
+            'min_child_weight': trial.suggest_int('min_child_weight', 1, 20),
+            'gamma': trial.suggest_float('gamma', 0.0, 5.0),
+            'max_delta_step': trial.suggest_int('max_delta_step', 0, 10),
+            'scale_pos_weight': trial.suggest_float('scale_pos_weight', 0.5, 3.0),
+            'grow_policy': trial.suggest_categorical('grow_policy', ['depthwise', 'lossguide']),
+            'max_leaves': trial.suggest_int('max_leaves', 0, 64),
+            'tree_method': trial.suggest_categorical('tree_method', ['hist', 'auto']),
+            'eval_metric': 'mlogloss'
         }
         
         model = XGBClassifier(**params, random_state=42, n_jobs=-1)
         
-        # ใช้ TimeSeriesSplit สำหรับ validation
-        tscv = TimeSeriesSplit(n_splits=3)
-        scores = []
+        return self._cross_validate_model(model, self.features, self.target)
+    
+    def objective_random_forest(self, trial):
+        """Random Forest optimization สำหรับ trading"""
         
-        for train_idx, val_idx in tscv.split(X_train):
-            X_tr, X_val = X_train.iloc[train_idx], X_train.iloc[val_idx]
-            y_tr, y_val = y_train[train_idx], y_train[val_idx]
-            
-            model.fit(X_tr, y_tr)
-            y_pred = model.predict(X_val)
-            scores.append(f1_score(y_val, y_pred, average='weighted'))
+        params = {
+            'n_estimators': trial.suggest_int('n_estimators', 100, 500),
+            'max_depth': trial.suggest_categorical('max_depth', [10, 20, 30, 40, None]),
+            'min_samples_split': trial.suggest_int('min_samples_split', 2, 20),
+            'min_samples_leaf': trial.suggest_int('min_samples_leaf', 1, 10),
+            'max_features': trial.suggest_categorical('max_features', ['sqrt', 'log2', None]),
+            'bootstrap': trial.suggest_categorical('bootstrap', [True, False]),
+            'class_weight': trial.suggest_categorical('class_weight', [None, 'balanced', 'balanced_subsample'])
+        }
         
-        return np.mean(scores)
+        # เพิ่ม max_samples เฉพาะเมื่อ bootstrap=True
+        if params['bootstrap']:
+            params['max_samples'] = trial.suggest_float('max_samples', 0.6, 1.0)
+        
+        # Remove None values
+        params = {k: v for k, v in params.items() if v is not None}
+        
+        model = RandomForestClassifier(**params, random_state=42, n_jobs=-1)
+        
+        return self._cross_validate_model(model, self.features, self.target)
+    
+    def objective_lightgbm(self, trial):
+        """LightGBM optimization"""
+        
+        params = {
+            'n_estimators': trial.suggest_int('n_estimators', 100, 1000),
+            'learning_rate': trial.suggest_float('learning_rate', 0.01, 0.3, log=True),
+            'num_leaves': trial.suggest_int('num_leaves', 20, 150),
+            'max_depth': trial.suggest_int('max_depth', 3, 12),
+            'min_child_samples': trial.suggest_int('min_child_samples', 5, 50),
+            'subsample': trial.suggest_float('subsample', 0.6, 1.0),
+            'colsample_bytree': trial.suggest_float('colsample_bytree', 0.6, 1.0),
+            'reg_alpha': trial.suggest_float('reg_alpha', 1e-8, 10.0, log=True),
+            'reg_lambda': trial.suggest_float('reg_lambda', 1e-8, 10.0, log=True),
+            'min_split_gain': trial.suggest_float('min_split_gain', 0.0, 1.0),
+            'boosting_type': trial.suggest_categorical('boosting_type', ['gbdt', 'dart']),
+            'objective': 'multiclass',
+            'metric': 'multi_logloss'
+        }
+        
+        model = LGBMClassifier(**params, random_state=42, n_jobs=-1)
+        
+        return self._cross_validate_model(model, self.features, self.target)
     
     def objective_advanced_lstm(self, trial):
         """Advanced LSTM optimization"""
@@ -482,98 +586,271 @@ class AdvancedTradingModelTrainer:
             ]
         )
         
+        # Pruning
+        trial.report(history.history['val_accuracy'][-1], step=0)
+        if trial.should_prune():
+            raise optuna.TrialPruned()
+        
         return max(history.history['val_accuracy'])
     
-    def advanced_auto_tune(self, n_trials=100):
+    def create_advanced_sampler(self):
+        """สร้าง advanced sampler สำหรับ Optuna"""
+        
+        # ใช้ TPESampler ด้วยการตั้งค่าขั้นสูง
+        sampler = TPESampler(
+            seed=42,
+            consider_prior=True,
+            prior_weight=1.0,
+            consider_magic_clip=True,
+            consider_endpoints=False,
+            n_startup_trials=10,
+            n_ei_candidates=24
+        )
+        
+        return sampler
+    
+    def create_advanced_pruner(self):
+        """สร้าง advanced pruner"""
+        
+        pruner = HyperbandPruner(
+            min_resource=1,
+            max_resource=100,
+            reduction_factor=3
+        )
+        
+        return pruner
+    
+    def advanced_auto_tune(self, n_trials=100, models_to_tune=None):
         """Advanced auto-tuning สำหรับ multiple models"""
-        print("Starting Advanced Auto Tuning...")
+        
+        if models_to_tune is None:
+            models_to_tune = ['xgboost', 'lightgbm', 'random_forest', 'lstm']
+        
+        print("🚀 Starting Advanced Auto Tuning...")
+        print(f"📊 Models to tune: {models_to_tune}")
+        print(f"🔬 Number of trials: {n_trials}")
         
         studies = {}
+        best_params = {}
         
-        # XGBoost Tuning
-        print("Tuning XGBoost...")
-        study_xgb = optuna.create_study(direction='maximize', sampler=TPESampler(seed=42))
-        study_xgb.optimize(self.objective_advanced_xgboost, n_trials=n_trials)
-        studies['xgboost'] = study_xgb
+        # สร้าง study สำหรับแต่ละโมเดล
+        for model_name in models_to_tune:
+            print(f"\n🎯 Tuning {model_name.upper()}...")
+            
+            # ตั้งค่า study
+            study = optuna.create_study(
+                direction='maximize',
+                sampler=self.create_advanced_sampler(),
+                pruner=self.create_advanced_pruner(),
+                study_name=f"{model_name}_tuning"
+            )
+            
+            # กำหนดฟังก์ชัน objective ตามโมเดล
+            if model_name == 'xgboost':
+                objective_func = self.objective_advanced_xgboost
+                n_trials_model = n_trials
+            elif model_name == 'lightgbm':
+                objective_func = self.objective_lightgbm
+                n_trials_model = n_trials
+            elif model_name == 'random_forest':
+                objective_func = self.objective_random_forest
+                n_trials_model = n_trials
+            elif model_name == 'lstm':
+                objective_func = self.objective_advanced_lstm
+                n_trials_model = min(50, n_trials)  # LSTM ใช้เวลามาก
+            else:
+                continue
+            
+            # เรียก optimization
+            study.optimize(
+                objective_func, 
+                n_trials=n_trials_model,
+                show_progress_bar=True,
+                gc_after_trial=True
+            )
+            
+            studies[model_name] = study
+            best_params[model_name] = study.best_params
+            
+            # แสดงผลลัพธ์
+            print(f"✅ Best {model_name} score: {study.best_value:.4f}")
+            print(f"🔧 Best parameters: {study.best_params}")
+            
+            # บันทึก visualization
+            self._save_optuna_visualizations(study, model_name)
         
-        # LSTM Tuning
-        print("Tuning LSTM...")
-        study_lstm = optuna.create_study(direction='maximize', sampler=TPESampler(seed=42))
-        study_lstm.optimize(self.objective_advanced_lstm, n_trials=min(50, n_trials))
-        studies['lstm'] = study_lstm
-        
-        return studies
+        return studies, best_params
     
-    def train_ensemble_model(self, studies):
-        """Train ensemble model ด้วย best parameters"""
-        print("\nTraining Ensemble Models...")
+    def _save_optuna_visualizations(self, study, model_name):
+        """บันทึก visualization ของ Optuna"""
+        
+        try:
+            # สร้าง directory สำหรับบันทึก
+            os.makedirs('optuna_plots', exist_ok=True)
+            
+            # Optimization history plot
+            fig = optuna.visualization.plot_optimization_history(study)
+            fig.write_html(f'optuna_plots/{model_name}_optimization_history.html')
+            
+            # Parameter importance plot
+            fig = optuna.visualization.plot_param_importances(study)
+            fig.write_html(f'optuna_plots/{model_name}_param_importance.html')
+            
+            # Parallel coordinate plot
+            fig = optuna.visualization.plot_parallel_coordinate(study)
+            fig.write_html(f'optuna_plots/{model_name}_parallel_coordinate.html')
+            
+            print(f"📈 Saved visualizations for {model_name}")
+            
+        except Exception as e:
+            print(f"⚠️ Could not save visualizations: {e}")
+    
+    def analyze_optuna_results(self, studies):
+        """วิเคราะห์ผลลัพธ์จากการ tuning"""
+        
+        print("\n" + "="*60)
+        print("OPTUNA TUNING ANALYSIS")
+        print("="*60)
+        
+        for model_name, study in studies.items():
+            print(f"\n📊 {model_name.upper()} Analysis:")
+            print(f"Best Trial: #{study.best_trial.number}")
+            print(f"Best Value: {study.best_value:.4f}")
+            print(f"Completed Trials: {len(study.trials)}")
+            
+            # วิเคราะห์ parameter importance
+            try:
+                importance_df = self._get_parameter_importance(study)
+                print("Parameter Importance:")
+                print(importance_df.head(10))
+            except:
+                print("Could not calculate parameter importance")
+            
+            # วิเคราะห์ convergence
+            self._analyze_convergence(study, model_name)
+    
+    def _get_parameter_importance(self, study):
+        """คำนวณ parameter importance"""
+        param_importance = optuna.importance.get_param_importances(study)
+        return pd.DataFrame(
+            list(param_importance.items()), 
+            columns=['Parameter', 'Importance']
+        ).sort_values('Importance', ascending=False)
+    
+    def _analyze_convergence(self, study, model_name):
+        """วิเคราะห์การลู่เข้าของการ optimization"""
+        values = [trial.value for trial in study.trials if trial.value is not None]
+        
+        if len(values) > 10:
+            initial_avg = np.mean(values[:10])
+            final_avg = np.mean(values[-10:])
+            improvement = final_avg - initial_avg
+            
+            print(f"Convergence Analysis:")
+            print(f"Initial 10 trials avg: {initial_avg:.4f}")
+            print(f"Final 10 trials avg: {final_avg:.4f}")
+            print(f"Improvement: {improvement:.4f}")
+            
+            if improvement < 0.01:
+                print("⚠️  Convergence may be stagnating")
+    
+    def train_models_with_best_params(self, best_params):
+        """Train models ด้วย best parameters ที่ได้จากการ tuning"""
+        print("\n🏋️ Training Models with Best Parameters...")
         
         best_models = {}
         
-        # Best XGBoost
-        xgb_params = studies['xgboost'].best_params
-        best_xgb = XGBClassifier(**xgb_params, random_state=42, n_jobs=-1)
-        best_xgb.fit(self.features, self.target)
-        best_models['xgboost'] = best_xgb
+        # Train XGBoost
+        if 'xgboost' in best_params:
+            print("Training XGBoost...")
+            xgb_params = best_params['xgboost'].copy()
+            # Remove parameters that might cause issues
+            xgb_params.pop('eval_metric', None)
+            best_xgb = XGBClassifier(**xgb_params, random_state=42, n_jobs=-1)
+            best_xgb.fit(self.features, self.target)
+            best_models['xgboost'] = best_xgb
         
-        # Best LSTM
-        lstm_params = studies['lstm'].best_params
-        time_steps = lstm_params['time_steps']
-        sequence_stride = lstm_params['sequence_stride']
+        # Train LightGBM
+        if 'lightgbm' in best_params:
+            print("Training LightGBM...")
+            lgb_params = best_params['lightgbm'].copy()
+            # Remove parameters that might cause issues
+            lgb_params.pop('objective', None)
+            lgb_params.pop('metric', None)
+            # เพิ่ม num_class สำหรับ multi-class classification
+            lgb_params['num_class'] = 3
+            best_lgb = LGBMClassifier(**lgb_params, random_state=42, n_jobs=-1, verbose=-1)
+            best_lgb.fit(self.features, self.target)
+            best_models['lightgbm'] = best_lgb
         
-        X_seq, y_seq = self.prepare_advanced_lstm_data(time_steps, sequence_stride)
+        # Train Random Forest
+        if 'random_forest' in best_params:
+            print("Training Random Forest...")
+            rf_params = best_params['random_forest'].copy()
+            best_rf = RandomForestClassifier(**rf_params, random_state=42, n_jobs=-1)
+            best_rf.fit(self.features, self.target)
+            best_models['random_forest'] = best_rf
         
-        best_lstm = Sequential()
-        best_lstm.add(Conv1D(
-            filters=lstm_params['filters_1'],
-            kernel_size=lstm_params['kernel_size'],
-            activation='relu',
-            input_shape=(time_steps, X_seq.shape[2])
-        ))
-        best_lstm.add(MaxPooling1D(pool_size=2))
-        
-        for i in range(lstm_params['n_layers']):
-            return_sequences = (i < lstm_params['n_layers'] - 1)
-            best_lstm.add(LSTM(
-                units=lstm_params[f'units_{i+1}'],
-                return_sequences=return_sequences,
-                kernel_regularizer=l2(lstm_params[f'l2_{i+1}'])
+        # Train LSTM
+        if 'lstm' in best_params:
+            print("Training LSTM...")
+            lstm_params = best_params['lstm'].copy()
+            time_steps = lstm_params['time_steps']
+            sequence_stride = lstm_params['sequence_stride']
+            
+            X_seq, y_seq = self.prepare_advanced_lstm_data(time_steps, sequence_stride)
+            
+            best_lstm = Sequential()
+            best_lstm.add(Conv1D(
+                filters=lstm_params['filters_1'],
+                kernel_size=lstm_params['kernel_size'],
+                activation='relu',
+                input_shape=(time_steps, X_seq.shape[2])
             ))
-            best_lstm.add(Dropout(lstm_params[f'dropout_{i+1}']))
-            if i < lstm_params['n_layers'] - 1:
-                best_lstm.add(BatchNormalization())
-        
-        best_lstm.add(Dense(64, activation='relu'))
-        best_lstm.add(Dropout(lstm_params['dropout_final']))
-        best_lstm.add(Dense(3, activation='softmax'))
-        
-        best_lstm.compile(
-            optimizer=Adam(learning_rate=lstm_params['learning_rate']),
-            loss='sparse_categorical_crossentropy',
-            metrics=['accuracy']
-        )
-        
-        class_weights = compute_class_weight(
-            'balanced', 
-            classes=np.unique(y_seq), 
-            y=y_seq
-        )
-        class_weight_dict = {i: weight for i, weight in enumerate(class_weights)}
-        
-        best_lstm.fit(
-            X_seq, y_seq,
-            batch_size=lstm_params['batch_size'],
-            epochs=150,
-            validation_split=0.2,
-            class_weight=class_weight_dict,
-            verbose=1,
-            callbacks=[
-                EarlyStopping(patience=20, restore_best_weights=True),
-                ReduceLROnPlateau(patience=10, factor=0.5, min_lr=1e-7)
-            ]
-        )
-        
-        best_models['lstm'] = best_lstm
+            best_lstm.add(MaxPooling1D(pool_size=2))
+            
+            for i in range(lstm_params['n_layers']):
+                return_sequences = (i < lstm_params['n_layers'] - 1)
+                best_lstm.add(LSTM(
+                    units=lstm_params[f'units_{i+1}'],
+                    return_sequences=return_sequences,
+                    kernel_regularizer=l2(lstm_params[f'l2_{i+1}'])
+                ))
+                best_lstm.add(Dropout(lstm_params[f'dropout_{i+1}']))
+                if i < lstm_params['n_layers'] - 1:
+                    best_lstm.add(BatchNormalization())
+            
+            best_lstm.add(Dense(64, activation='relu'))
+            best_lstm.add(Dropout(lstm_params['dropout_final']))
+            best_lstm.add(Dense(3, activation='softmax'))
+            
+            best_lstm.compile(
+                optimizer=Adam(learning_rate=lstm_params['learning_rate']),
+                loss='sparse_categorical_crossentropy',
+                metrics=['accuracy']
+            )
+            
+            class_weights = compute_class_weight(
+                'balanced', 
+                classes=np.unique(y_seq), 
+                y=y_seq
+            )
+            class_weight_dict = {i: weight for i, weight in enumerate(class_weights)}
+            
+            best_lstm.fit(
+                X_seq, y_seq,
+                batch_size=lstm_params['batch_size'],
+                epochs=150,
+                validation_split=0.2,
+                class_weight=class_weight_dict,
+                verbose=1,
+                callbacks=[
+                    EarlyStopping(patience=20, restore_best_weights=True),
+                    ReduceLROnPlateau(patience=10, factor=0.5, min_lr=1e-7)
+                ]
+            )
+            
+            best_models['lstm'] = best_lstm
         
         return best_models
     
@@ -634,13 +911,14 @@ class AdvancedTradingModelTrainer:
                                       target_names=['Loss', 'Neutral', 'Profit']))
         
         # Find best model
-        best_model_name = max(results, key=lambda x: results[x]['success_rate'])
-        self.best_model = models[best_model_name]
-        self.best_score = results[best_model_name]['success_rate']
-        
-        print(f"\n🏆 BEST STRATEGY MODEL: {best_model_name}")
-        print(f"🎯 Success Rate: {self.best_score:.4f}")
-        print(f"📊 Accuracy: {results[best_model_name]['accuracy']:.4f}")
+        if results:
+            best_model_name = max(results, key=lambda x: results[x]['success_rate'])
+            self.best_model = models[best_model_name]
+            self.best_score = results[best_model_name]['success_rate']
+            
+            print(f"\n🏆 BEST STRATEGY MODEL: {best_model_name}")
+            print(f"🎯 Success Rate: {self.best_score:.4f}")
+            print(f"📊 Accuracy: {results[best_model_name]['accuracy']:.4f}")
         
         return results
 
@@ -655,11 +933,14 @@ def main():
     
     # Auto tuning
     print("Starting advanced auto-tuning...")
-    studies = trainer.advanced_auto_tune(n_trials=80)
+    studies, best_params = trainer.advanced_auto_tune(n_trials=50)
     
-    # Training
-    print("Training ensemble models...")
-    best_models = trainer.train_ensemble_model(studies)
+    # วิเคราะห์ผลลัพธ์ tuning
+    trainer.analyze_optuna_results(studies)
+    
+    # Training ด้วย best parameters
+    print("Training models with best parameters...")
+    best_models = trainer.train_models_with_best_params(best_params)
     
     # Evaluation
     print("Evaluating strategy performance...")
@@ -673,7 +954,7 @@ def main():
     
     print(f"\n✅ Training completed! Best model success rate: {trainer.best_score:.4f}")
 
-    return trainer, best_models, results
+    return trainer, best_models, results, studies
 
 if __name__ == "__main__":
-    trainer, models, results = main()
+    trainer, models, results, studies = main()
