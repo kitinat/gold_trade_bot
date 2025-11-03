@@ -17,7 +17,7 @@ OKX_CONFIG = {
     'api_key': '270026b1-87dd-4e8b-b455-046ce944b62d',
     'secret': 'B447ABD700F9C17102D87F9D7BF1B5F5',
     'password': 'db9boymTN@',
-    'sandbox': False,  # ใช้ True สำหรับ testnet, False สำหรับ real trading
+    'sandbox': False,  # เปลี่ยนเป็น True เพื่อใช้ testnet
 }
 
 # ==================== TRADING CONFIG ====================
@@ -26,7 +26,7 @@ TRADING_CONFIG = {
     'timeframe': os.getenv('TIMEFRAME', '15m'),
     'trade_size_usdt': float(os.getenv('TRADE_SIZE_USDT', 100)),
     'max_open_positions': 1,
-    'trading_enabled': True,  # ตั้งเป็น False เพื่อทดสอบโดยไม่ส่งออร์เดอร์จริง
+    'trading_enabled': False,  # ตั้งเป็น False เพื่อทดสอบโดยไม่ส่งออร์เดอร์จริง
 }
 
 # ==================== RISK MANAGEMENT ====================
