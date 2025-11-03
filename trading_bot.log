@@ -4977,3 +4977,112 @@
 2025-11-03 22:09:31,771 - __main__ - INFO - 🛑 Received stop signal, shutting down gracefully...
 2025-11-03 22:09:31,772 - __main__ - INFO -    Waiting for background threads to finish...
 2025-11-03 22:09:33,773 - __main__ - INFO - 🛑 Trading bot stopped
+2025-11-03 22:10:15,573 - __main__ - INFO - ✅ Environment validation passed
+2025-11-03 22:10:15,575 - trade_history - INFO - ✅ Trade history database setup completed
+2025-11-03 22:10:15,575 - __main__ - INFO - ✅ Trade history manager initialized
+2025-11-03 22:10:16,879 - __main__ - INFO - ✅ OKX connection established successfully
+2025-11-03 22:10:16,879 - __main__ - INFO -    Mode: PRODUCTION/LIVE
+2025-11-03 22:10:16,880 - __main__ - INFO -    ✅ Balance data available
+2025-11-03 22:10:16,880 - __main__ - INFO - ✅ Trading symbol validated: PAXG/USDT
+2025-11-03 22:10:16,880 - __main__ - INFO -    Market type: spot
+2025-11-03 22:10:16,880 - __main__ - INFO -    Spot: True
+2025-11-03 22:10:16,880 - __main__ - INFO -    Swap: False
+2025-11-03 22:10:16,881 - __main__ - INFO - ============================================================
+2025-11-03 22:10:16,881 - __main__ - INFO - 📦 LOADING ML MODELS
+2025-11-03 22:10:16,881 - __main__ - INFO - ============================================================
+2025-11-03 22:10:16,881 - __main__ - INFO - Loading model...
+2025-11-03 22:10:16,887 - __main__ - INFO -    ✅ Model type: LGBMClassifier
+2025-11-03 22:10:16,887 - __main__ - INFO - 
+2025-11-03 22:10:16,887 - __main__ - INFO - 🤖 MODEL INFORMATION:
+2025-11-03 22:10:16,887 - __main__ - INFO - ============================================================
+2025-11-03 22:10:16,888 - __main__ - INFO - 📌 Model Parameters:
+2025-11-03 22:10:16,888 - __main__ - INFO -    • n_estimators: 641
+2025-11-03 22:10:16,888 - __main__ - INFO -    • learning_rate: 0.06984461530273925
+2025-11-03 22:10:16,888 - __main__ - INFO -    • max_depth: 11
+2025-11-03 22:10:16,888 - __main__ - INFO -    • num_leaves: 55
+2025-11-03 22:10:16,888 - __main__ - INFO -    • min_child_samples: 43
+2025-11-03 22:10:16,888 - __main__ - INFO -    • subsample: 0.7400034627810583
+2025-11-03 22:10:16,888 - __main__ - INFO -    • colsample_bytree: 0.6686981889907346
+2025-11-03 22:10:16,889 - __main__ - INFO -    • reg_alpha: 0.003990661850302467
+2025-11-03 22:10:16,889 - __main__ - INFO -    • reg_lambda: 0.06746288733694625
+2025-11-03 22:10:16,889 - __main__ - INFO -    • min_split_gain: 0.8936670653683096
+2025-11-03 22:10:16,889 - __main__ - INFO - 
+2025-11-03 22:10:16,889 - __main__ - INFO - 📊 Feature Importance (Top 10):
+2025-11-03 22:10:16,889 - __main__ - INFO - 
+2025-11-03 22:10:16,890 - __main__ - INFO - 📋 Model Classes: [0 1 2]
+2025-11-03 22:10:16,890 - __main__ - INFO - 🔢 Number of Features (model expects): 25
+2025-11-03 22:10:16,890 - __main__ - INFO - ============================================================
+2025-11-03 22:10:16,890 - __main__ - INFO - Loading scaler...
+2025-11-03 22:10:16,891 - __main__ - INFO -    ✅ Scaler type: StandardScaler
+2025-11-03 22:10:16,891 - __main__ - INFO - Loading feature columns...
+2025-11-03 22:10:16,891 - __main__ - INFO -    ✅ Number of features: 25
+2025-11-03 22:10:16,891 - __main__ - INFO - 
+2025-11-03 22:10:16,891 - __main__ - INFO - 📊 TOP 15 MOST IMPORTANT FEATURES:
+2025-11-03 22:10:16,891 - __main__ - INFO - ============================================================
+2025-11-03 22:10:16,893 - __main__ - INFO -    h1_trend_strength              27000.00%
+2025-11-03 22:10:16,893 - __main__ - INFO -    m15_obv                        20900.00%
+2025-11-03 22:10:16,893 - __main__ - INFO -    distance_to_support            20200.00%
+2025-11-03 22:10:16,894 - __main__ - INFO -    h1_rsi                         19800.00%
+2025-11-03 22:10:16,894 - __main__ - INFO -    h1_macd                        18900.00%
+2025-11-03 22:10:16,894 - __main__ - INFO -    m15_rsi_14                     17700.00%
+2025-11-03 22:10:16,894 - __main__ - INFO -    volatility_regime              17200.00%
+2025-11-03 22:10:16,894 - __main__ - INFO -    m15_roc_5                      15200.00%
+2025-11-03 22:10:16,894 - __main__ - INFO -    m15_atr                        14300.00%
+2025-11-03 22:10:16,894 - __main__ - INFO -    price_vs_h1_ema50              14000.00%
+2025-11-03 22:10:16,895 - __main__ - INFO -    m15_bb_width                   11900.00%
+2025-11-03 22:10:16,895 - __main__ - INFO -    m15_macd                       10900.00%
+2025-11-03 22:10:16,895 - __main__ - INFO -    m15_stoch_d                    10000.00%
+2025-11-03 22:10:16,895 - __main__ - INFO -    distance_to_resistance         9400.00%
+2025-11-03 22:10:16,895 - __main__ - INFO -    m15_roc_10                     8600.00%
+2025-11-03 22:10:16,895 - __main__ - INFO - ============================================================
+2025-11-03 22:10:16,896 - __main__ - INFO - 
+2025-11-03 22:10:16,896 - __main__ - INFO - 📊 MODEL METADATA:
+2025-11-03 22:10:16,896 - __main__ - INFO -    Model Name: lightgbm
+2025-11-03 22:10:16,896 - __main__ - INFO -    Training Date: 2025-11-02T20:52:15.184574
+2025-11-03 22:10:16,896 - __main__ - INFO -    Best Score: 1.0
+2025-11-03 22:10:16,896 - __main__ - INFO -    Training Samples: 17457
+2025-11-03 22:10:16,896 - __main__ - INFO -    ✅ Feature calculator initialized (v2)
+2025-11-03 22:10:16,896 - __main__ - INFO -    ✅ Created feature calculator wrapper method
+2025-11-03 22:10:16,896 - __main__ - INFO - ============================================================
+2025-11-03 22:10:16,896 - __main__ - INFO - ✅ ML MODELS LOADED SUCCESSFULLY
+2025-11-03 22:10:16,896 - __main__ - INFO - ============================================================
+2025-11-03 22:10:16,897 - __main__ - INFO - 
+2025-11-03 22:10:16,897 - __main__ - INFO - 🎯 MODEL SUMMARY:
+2025-11-03 22:10:16,897 - __main__ - INFO -    Model Type: LGBMClassifier
+2025-11-03 22:10:16,897 - __main__ - INFO -    Scaler Type: StandardScaler
+2025-11-03 22:10:16,897 - __main__ - INFO -    Total Features: 25
+2025-11-03 22:10:16,897 - __main__ - INFO -    Mode: ADVANCED ML PREDICTIONS
+2025-11-03 22:10:16,897 - __main__ - INFO -    Expected Performance: 70-85% win rate
+2025-11-03 22:10:16,897 - __main__ - INFO -    Training Accuracy: 100.00%
+2025-11-03 22:10:16,897 - __main__ - INFO -    Training Samples: 17,457
+2025-11-03 22:10:16,898 - __main__ - INFO -    Training Date: 2025-11-02T20:52:15.184574
+2025-11-03 22:10:16,898 - __main__ - INFO - 
+2025-11-03 22:10:16,898 - __main__ - INFO - Feature List (Top 10):
+2025-11-03 22:10:16,898 - __main__ - INFO -     1. h1_trend_strength
+2025-11-03 22:10:16,898 - __main__ - INFO -     2. h1_trend_direction
+2025-11-03 22:10:16,898 - __main__ - INFO -     3. h1_rsi
+2025-11-03 22:10:16,898 - __main__ - INFO -     4. h1_macd
+2025-11-03 22:10:16,898 - __main__ - INFO -     5. m15_rsi_14
+2025-11-03 22:10:16,898 - __main__ - INFO -     6. m15_macd
+2025-11-03 22:10:16,898 - __main__ - INFO -     7. m15_macd_hist
+2025-11-03 22:10:16,898 - __main__ - INFO -     8. m15_stoch_k
+2025-11-03 22:10:16,898 - __main__ - INFO -     9. m15_stoch_d
+2025-11-03 22:10:16,899 - __main__ - INFO -    10. m15_roc_5
+2025-11-03 22:10:16,899 - __main__ - INFO -    ... and 15 more features
+2025-11-03 22:10:16,899 - __main__ - INFO - ============================================================
+2025-11-03 22:10:16,899 - __main__ - INFO - ✅ Hourly report system started
+2025-11-03 22:10:16,900 - __main__ - INFO - ✅ Daily export system started
+2025-11-03 22:10:16,900 - __main__ - INFO - ✅ Trading bot initialized successfully
+2025-11-03 22:10:16,900 - __main__ - INFO - 🤖 Starting trading bot with 15 minute interval
+2025-11-03 22:10:17,877 - __main__ - INFO - 🔄 Starting trading cycle at 2025-11-03 22:10:17.877951
+2025-11-03 22:10:18,303 - __main__ - INFO - ✅ Balance fetched from account type: spot
+2025-11-03 22:10:18,303 - __main__ - INFO - 💰 USDT Balance: Total=$11.95, Free=$11.95, Used=$0.00
+2025-11-03 22:10:18,390 - __main__ - INFO - Calculating comprehensive features...
+2025-11-03 22:10:18,423 - __main__ - INFO - ✅ Comprehensive features calculated: (100, 104)
+2025-11-03 22:10:18,423 - __main__ - INFO - ✅ Features calculated using prepare_features
+2025-11-03 22:10:18,423 - __main__ - INFO - 📊 Features shape: (100, 104)
+2025-11-03 22:10:18,425 - __main__ - INFO - ✅ Final features shape: (1, 25)
+2025-11-03 22:10:18,429 - __main__ - INFO - 🤖 ML Prediction: 1 | Confidence: HIGH (100.0%)
+2025-11-03 22:10:18,430 - __main__ - INFO -    Probabilities: BUY=100.0%, SELL=0.0%
+2025-11-03 22:10:18,433 - __main__ - INFO - Trading cycle completed - Signal: 1, Confidence: HIGH
+2025-11-03 22:10:18,434 - __main__ - INFO - 💤 Cycle completed in 0.6s, sleeping for 899.4s
