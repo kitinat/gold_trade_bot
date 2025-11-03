@@ -7,6 +7,7 @@ import talib
 import time
 import logging
 import traceback
+import json
 from datetime import datetime, timedelta
 import asyncio
 import aiohttp
@@ -55,6 +56,9 @@ class OKXTradingBot:
         # เริ่มระบบรายงาน
         if BOT_CONFIG['hourly_report_enabled']:
             self.start_hourly_report()
+        
+        # เริ่มระบบ export รายวัน
+        self.start_daily_export()
         
         self.logger.info("✅ Trading bot initialized successfully")
     
@@ -300,6 +304,47 @@ class OKXTradingBot:
             model_type = type(self.model).__name__
             self.logger.info(f"   ✅ Model type: {model_type}")
             
+            # แสดง Model Information
+            self.logger.info("")
+            self.logger.info("🤖 MODEL INFORMATION:")
+            self.logger.info("="*60)
+            
+            # ตรวจสอบว่าเป็น LightGBM model
+            if hasattr(self.model, 'get_params'):
+                params = self.model.get_params()
+                self.logger.info("📌 Model Parameters:")
+                
+                # แสดง parameters ที่สำคัญ
+                important_params = [
+                    'n_estimators', 'learning_rate', 'max_depth', 'num_leaves',
+                    'min_child_samples', 'subsample', 'colsample_bytree',
+                    'reg_alpha', 'reg_lambda', 'min_split_gain'
+                ]
+                
+                for param in important_params:
+                    if param in params:
+                        self.logger.info(f"   • {param}: {params[param]}")
+            
+            # แสดง Feature Importance (ถ้ามี)
+            if hasattr(self.model, 'feature_importances_'):
+                self.logger.info("")
+                self.logger.info("📊 Feature Importance (Top 10):")
+                feature_importance = self.model.feature_importances_
+                # จะแสดงรายละเอียดหลังจากโหลด feature_columns
+            
+            # แสดง Model Classes
+            if hasattr(self.model, 'classes_'):
+                self.logger.info("")
+                self.logger.info(f"📋 Model Classes: {self.model.classes_}")
+            
+            # แสดง Number of Features
+            if hasattr(self.model, 'n_features_'):
+                self.logger.info(f"🔢 Number of Features (model expects): {self.model.n_features_}")
+            elif hasattr(self.model, 'n_features_in_'):
+                self.logger.info(f"🔢 Number of Features (model expects): {self.model.n_features_in_}")
+            
+            self.logger.info("="*60)
+            
             # โหลด scaler
             self.logger.info("Loading scaler...")
             self.scaler = joblib.load(MODEL_CONFIG['scaler_path'])
@@ -311,6 +356,26 @@ class OKXTradingBot:
             self.feature_columns = joblib.load(MODEL_CONFIG['features_path'])
             n_features = len(self.feature_columns)
             self.logger.info(f"   ✅ Number of features: {n_features}")
+            
+            # แสดง Feature Importance (ต่อจากที่โหลด model)
+            if hasattr(self.model, 'feature_importances_'):
+                self.logger.info("")
+                self.logger.info("📊 TOP 15 MOST IMPORTANT FEATURES:")
+                self.logger.info("="*60)
+                
+                # สร้าง DataFrame เพื่อเรียงลำดับ
+                feature_importance = self.model.feature_importances_
+                importance_df = pd.DataFrame({
+                    'feature': self.feature_columns,
+                    'importance': feature_importance
+                }).sort_values('importance', ascending=False)
+                
+                # แสดง Top 15 features
+                for idx, row in importance_df.head(15).iterrows():
+                    importance_pct = row['importance'] * 100
+                    self.logger.info(f"   {row['feature']:30s} {importance_pct:5.2f}%")
+                
+                self.logger.info("="*60)
             
             # โหลด metadata ถ้ามี
             metadata_path = 'saved_models/model_metadata.pkl'
@@ -357,8 +422,29 @@ class OKXTradingBot:
             self.logger.info("="*60)
             self.logger.info("✅ ML MODELS LOADED SUCCESSFULLY")
             self.logger.info("="*60)
-            self.logger.info(f"Mode: ADVANCED ML PREDICTIONS")
-            self.logger.info(f"Expected Performance: 70-85% win rate")
+            
+            # แสดง Summary ของ Model
+            self.logger.info("")
+            self.logger.info("🎯 MODEL SUMMARY:")
+            self.logger.info(f"   Model Type: {type(self.model).__name__}")
+            self.logger.info(f"   Scaler Type: {type(self.scaler).__name__}")
+            self.logger.info(f"   Total Features: {len(self.feature_columns)}")
+            self.logger.info(f"   Mode: ADVANCED ML PREDICTIONS")
+            self.logger.info(f"   Expected Performance: 70-85% win rate")
+            
+            # แสดง Metadata ถ้ามี
+            if os.path.exists('saved_models/model_metadata.pkl'):
+                try:
+                    metadata = joblib.load('saved_models/model_metadata.pkl')
+                    if 'best_score' in metadata:
+                        self.logger.info(f"   Training Accuracy: {metadata['best_score']:.2%}")
+                    if 'n_samples' in metadata:
+                        self.logger.info(f"   Training Samples: {metadata['n_samples']:,}")
+                    if 'training_date' in metadata:
+                        self.logger.info(f"   Training Date: {metadata['training_date']}")
+                except:
+                    pass
+            
             self.logger.info("")
             self.logger.info("Feature List (Top 10):")
             for i, feature in enumerate(self.feature_columns[:10], 1):
@@ -448,6 +534,9 @@ class OKXTradingBot:
             features['price_range'] = features['high'] - features['low']
             features['body_size'] = abs(features['close'] - features['open'])
             
+            # Replace any inf values from log of negative or zero
+            features['log_returns'] = features['log_returns'].replace([np.inf, -np.inf], 0)
+            
             # ===== 2. Technical Indicators =====
             
             # RSI (Multiple timeframes)
@@ -483,8 +572,8 @@ class OKXTradingBot:
             features['bb_upper'] = upper
             features['bb_middle'] = middle
             features['bb_lower'] = lower
-            features['bb_width'] = (upper - lower) / middle
-            features['bb_position'] = (features['close'] - lower) / (upper - lower)
+            features['bb_width'] = (upper - lower) / np.where(middle != 0, middle, 1)  # Prevent division by zero
+            features['bb_position'] = (features['close'] - lower) / np.where((upper - lower) != 0, (upper - lower), 1)  # Prevent division by zero
             
             # ATR (Volatility)
             features['atr_14'] = talib.ATR(features['high'], features['low'], features['close'], timeperiod=14)
@@ -522,7 +611,7 @@ class OKXTradingBot:
             
             # ===== 3. Volume Features =====
             features['volume_sma_20'] = talib.SMA(features['volume'], timeperiod=20)
-            features['volume_ratio'] = features['volume'] / features['volume_sma_20']
+            features['volume_ratio'] = features['volume'] / np.where(features['volume_sma_20'] != 0, features['volume_sma_20'], 1)
             features['volume_change'] = features['volume'].pct_change()
             
             # ===== 4. Candlestick Patterns =====
@@ -533,7 +622,10 @@ class OKXTradingBot:
             features['morning_star'] = talib.CDLMORNINGSTAR(features['open'], features['high'], features['low'], features['close'])
             
             # ===== 5. Price Position & Momentum =====
-            features['price_position'] = (features['close'] - features['low']) / (features['high'] - features['low'])
+            price_range = features['high'] - features['low']
+            features['price_position'] = np.where(price_range != 0, 
+                                                   (features['close'] - features['low']) / price_range, 
+                                                   0.5)  # Default to middle if no range
             features['momentum'] = talib.MOM(features['close'], timeperiod=10)
             features['roc'] = talib.ROC(features['close'], timeperiod=10)
             
@@ -541,8 +633,12 @@ class OKXTradingBot:
             # Simple support/resistance based on rolling min/max
             features['resistance_20'] = features['high'].rolling(20).max()
             features['support_20'] = features['low'].rolling(20).min()
-            features['distance_to_resistance'] = (features['resistance_20'] - features['close']) / features['close']
-            features['distance_to_support'] = (features['close'] - features['support_20']) / features['close']
+            features['distance_to_resistance'] = np.where(features['close'] != 0,
+                                                          (features['resistance_20'] - features['close']) / features['close'],
+                                                          0)
+            features['distance_to_support'] = np.where(features['close'] != 0,
+                                                        (features['close'] - features['support_20']) / features['close'],
+                                                        0)
             
             # ===== 7. Multi-timeframe indicators (simulated) =====
             # เนื่องจากเรามีแค่ข้อมูล 1 timeframe ให้ใช้ rolling window จำลอง
@@ -574,7 +670,7 @@ class OKXTradingBot:
             
             # m15 Volume indicators
             features['m15_volume_sma'] = talib.SMA(features['volume'], timeperiod=15)
-            features['m15_volume_ratio'] = features['volume'] / features['m15_volume_sma']
+            features['m15_volume_ratio'] = features['volume'] / np.where(features['m15_volume_sma'] != 0, features['m15_volume_sma'], 1)
             
             # m15 Stochastic
             m15_slowk, m15_slowd = talib.STOCH(
@@ -629,16 +725,22 @@ class OKXTradingBot:
             features['m15_bb_upper'] = m15_upper
             features['m15_bb_middle'] = m15_middle
             features['m15_bb_lower'] = m15_lower
-            features['m15_bb_width'] = (m15_upper - m15_lower) / m15_middle
+            features['m15_bb_width'] = (m15_upper - m15_lower) / np.where(m15_middle != 0, m15_middle, 1)
             
             # m15 ROC
             features['m15_roc_10'] = talib.ROC(features['close'], timeperiod=10)
             features['m15_roc_5'] = talib.ROC(features['close'], timeperiod=5)
             
-            # Price vs moving averages
-            features['price_vs_h1_ema21'] = (features['close'] - features['h1_ema21']) / features['h1_ema21']
-            features['price_vs_h1_ema50'] = (features['close'] - features['h1_ema50']) / features['h1_ema50']
-            features['price_vs_m15_ema'] = (features['close'] - features['m15_ema']) / features['m15_ema']
+            # Price vs moving averages (with zero protection)
+            features['price_vs_h1_ema21'] = np.where(features['h1_ema21'] != 0,
+                                                      (features['close'] - features['h1_ema21']) / features['h1_ema21'],
+                                                      0)
+            features['price_vs_h1_ema50'] = np.where(features['h1_ema50'] != 0,
+                                                      (features['close'] - features['h1_ema50']) / features['h1_ema50'],
+                                                      0)
+            features['price_vs_m15_ema'] = np.where(features['m15_ema'] != 0,
+                                                     (features['close'] - features['m15_ema']) / features['m15_ema'],
+                                                     0)
             
             # Additional technical indicators
             features['ema_5'] = talib.EMA(features['close'], timeperiod=5)
@@ -657,13 +759,15 @@ class OKXTradingBot:
             
             # Volatility regime: 0 = Low, 1 = Medium, 2 = High
             # ใช้ ATR เทียบกับ moving average ของ ATR
-            features['volatility_regime'] = 1  # Default medium
-            features.loc[atr_20 < atr_50 * 0.8, 'volatility_regime'] = 0  # Low volatility
-            features.loc[atr_20 > atr_50 * 1.2, 'volatility_regime'] = 2  # High volatility
+            # ใช้ pd.Series เพื่อหลีกเลี่ยง SettingWithCopyWarning
+            volatility_regime = pd.Series(1, index=features.index)  # Default medium
+            volatility_regime[atr_20 < atr_50 * 0.8] = 0  # Low volatility
+            volatility_regime[atr_20 > atr_50 * 1.2] = 2  # High volatility
+            features['volatility_regime'] = volatility_regime
             
             # ===== 10. Clean up =====
             # Forward fill แล้ว backward fill แล้ว fill ด้วย 0
-            features = features.fillna(method='ffill').fillna(method='bfill').fillna(0)
+            features = features.ffill().bfill().fillna(0)
             
             # แทนที่ infinite values
             features = features.replace([np.inf, -np.inf], 0)
@@ -920,6 +1024,7 @@ class OKXTradingBot:
             # Price-based features
             features['returns'] = features['close'].pct_change()
             features['log_returns'] = np.log(features['close'] / features['close'].shift(1))
+            features['log_returns'] = features['log_returns'].replace([np.inf, -np.inf], 0)
             
             # Technical indicators using TA-Lib
             # Moving Averages
@@ -952,7 +1057,7 @@ class OKXTradingBot:
             features['bb_upper'] = upper
             features['bb_middle'] = middle
             features['bb_lower'] = lower
-            features['bb_width'] = (upper - lower) / middle
+            features['bb_width'] = (upper - lower) / np.where(middle != 0, middle, 1)
             
             # ATR (Average True Range)
             features['atr_14'] = talib.ATR(
@@ -992,13 +1097,16 @@ class OKXTradingBot:
             
             # Volume indicators
             features['volume_sma_20'] = talib.SMA(features['volume'], timeperiod=20)
-            features['volume_ratio'] = features['volume'] / features['volume_sma_20']
+            features['volume_ratio'] = features['volume'] / np.where(features['volume_sma_20'] != 0, features['volume_sma_20'], 1)
             
             # Price position
-            features['price_position'] = (features['close'] - features['low']) / (features['high'] - features['low'])
+            price_range = features['high'] - features['low']
+            features['price_position'] = np.where(price_range != 0,
+                                                   (features['close'] - features['low']) / price_range,
+                                                   0.5)
             
             # Remove NaN rows (จาก indicators ที่ต้องใช้ history)
-            features = features.fillna(method='bfill').fillna(0)
+            features = features.bfill().fillna(0)
             
             # ลบ columns ที่ไม่ใช่ features
             features = features.drop(columns=['open', 'high', 'low', 'close', 'volume', 'timestamp', 'datetime'], errors='ignore')
@@ -1037,10 +1145,17 @@ class OKXTradingBot:
                     prediction = self.model.predict(features_scaled)[0]
                     probability = self.model.predict_proba(features_scaled)[0]
                     
+                    # แสดงข้อมูล Model Prediction
+                    max_prob = float(max(probability))
+                    confidence_level = 'HIGH' if max_prob > 0.7 else 'MEDIUM' if max_prob > MODEL_CONFIG['min_confidence'] else 'LOW'
+                    
+                    self.logger.info(f"🤖 ML Prediction: {prediction} | Confidence: {confidence_level} ({max_prob:.1%})")
+                    self.logger.info(f"   Probabilities: BUY={probability[1]:.1%}, SELL={probability[0]:.1%}")
+                    
                     signal_info.update({
                         'signal': prediction,
-                        'probability': float(max(probability)),
-                        'confidence': 'HIGH' if max(probability) > 0.7 else 'MEDIUM' if max(probability) > MODEL_CONFIG['min_confidence'] else 'LOW',
+                        'probability': max_prob,
+                        'confidence': confidence_level,
                         'features': features.tolist()
                     })
                 else:
@@ -1611,6 +1726,42 @@ class OKXTradingBot:
             report_thread.start()
             self.logger.info("✅ Hourly report system started")
     
+    def start_daily_export(self):
+        """เริ่ม thread สำหรับ export ข้อมูลรายวัน"""
+        def export_loop():
+            while self.is_running:
+                try:
+                    # รอจนถึงเที่ยงคืน
+                    now = datetime.now()
+                    next_midnight = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+                    wait_seconds = (next_midnight - now).total_seconds()
+                    
+                    # Sleep เป็นช่วงสั้นๆ และตรวจสอบ is_running
+                    if wait_seconds > 0:
+                        elapsed = 0
+                        sleep_interval = 60  # ตรวจสอบทุก 60 วินาที
+                        while elapsed < wait_seconds and self.is_running:
+                            time.sleep(min(sleep_interval, wait_seconds - elapsed))
+                            elapsed += sleep_interval
+                    
+                    # ถ้า bot ถูกหยุดระหว่างรอ ให้ออกจาก loop
+                    if not self.is_running:
+                        break
+                    
+                    # Export trade history
+                    self.logger.info("📤 Starting daily trade history export...")
+                    self.export_trade_history(days=30)
+                    
+                except Exception as e:
+                    self.logger.error(f"Error in daily export loop: {e}")
+                    if self.is_running:
+                        time.sleep(300)  # รอ 5 นาทีแล้วลองใหม่
+        
+        if BOT_CONFIG.get('daily_export_enabled', True):  # Default enabled
+            export_thread = threading.Thread(target=export_loop, daemon=True)
+            export_thread.start()
+            self.logger.info("✅ Daily export system started")
+    
     def health_check(self):
         """ตรวจสอบสุขภาพของระบบ"""
         try:
@@ -1715,22 +1866,27 @@ class OKXTradingBot:
     
     def stop(self):
         """หยุดการทำงานของ bot"""
+        self.export_trade_history(days=30)
         self.logger.info("🛑 Received stop signal, shutting down gracefully...")
         self.is_running = False
         
-        # รอให้ background threads หยุด (สูงสุด 5 วินาที)
+        # รอให้ background threads หยุด (สูงสุด 2 วินาที)
         self.logger.info("   Waiting for background threads to finish...")
         time.sleep(2)
         
         self.logger.info("🛑 Trading bot stopped")
         
-        # ส่ง Telegram notification
+        # ส่ง Telegram notification (ถ้าทำได้)
         try:
-            asyncio.run(self.send_telegram_message("🛑 Trading Bot Stopped"))
+            # ใช้ new event loop เพื่อหลีกเลี่ยง RuntimeError
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(self.send_telegram_message("🛑 Trading Bot Stopped"))
+            loop.close()
         except Exception as e:
             self.logger.debug(f"Could not send stop notification: {e}")
         
-        # Force exit if needed
+        # Force exit
         import sys
         sys.exit(0)
     
@@ -1797,20 +1953,30 @@ class OKXTradingBot:
     
     def export_trade_history(self, days: int = 30):
         """ส่งออกประวัติการเทรด"""
-        files = self.history_manager.export_to_csv(days)
-        
-        if files:
-            message = f"""
+        try:
+            files = self.history_manager.export_to_csv(days)
+            
+            if files:
+                message = f"""
 💾 <b>TRADE HISTORY EXPORTED</b>
 ├ Trades: {os.path.basename(files['trades_file'])}
 ├ Signals: {os.path.basename(files['signals_file'])}  
 ├ Portfolio: {os.path.basename(files['portfolio_file'])}
 └ Period: Last {days} days
-            """
+                """
+                
+                # ใช้ new event loop
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(self.send_telegram_message(message))
+                loop.close()
+                
+                self.logger.info(f"✅ Trade history exported successfully")
             
-            asyncio.run(self.send_telegram_message(message))
-        
-        return files
+            return files
+        except Exception as e:
+            self.logger.error(f"Error exporting trade history: {e}")
+            return None
 
 def main():
     """Main entry point"""

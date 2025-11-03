@@ -1,0 +1,1 @@
+id,timestamp,symbol,side,amount,price,value_usdt,order_id,signal_confidence,pnl,pnl_percent,fee,status,exit_reason,entry_order_id,exit_timestamp,holding_period_minutes

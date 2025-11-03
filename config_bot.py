@@ -13,6 +13,21 @@ load_dotenv()
 #     'password': os.getenv('OKX_PASSPHRASE', 'db9boymTN@'),
 #     'sandbox': True,  # ใช้ True สำหรับ testnet, False สำหรับ real trading
 # }
+# ==================== TRADING CONFIG ====================
+# TRADING_CONFIG = {
+#     'symbol': os.getenv('TRADING_SYMBOL', 'PAXG/USDT'),
+#     'timeframe': os.getenv('TIMEFRAME', '15m'),
+#     'trade_size_usdt': float(os.getenv('TRADE_SIZE_USDT', 100)),
+#     'max_open_positions': 1,
+#     'trading_enabled': False,  # ตั้งเป็น False เพื่อทดสอบโดยไม่ส่งออร์เดอร์จริง
+# }
+# ==================== TELEGRAM CONFIG ====================
+# TELEGRAM_CONFIG = {
+#     'token': os.getenv('TELEGRAM_BOT_TOKEN', '8445583953:AAHvaT4WC31YM2yQdrA5mu5PQ8N8XqNig78'),
+#     'chat_id': os.getenv('TELEGRAM_CHAT_ID', '5292577404'),
+#     'notifications_enabled': True,
+# }
+
 OKX_CONFIG = {
     'api_key': '270026b1-87dd-4e8b-b455-046ce944b62d',
     'secret': 'B447ABD700F9C17102D87F9D7BF1B5F5',
@@ -22,9 +37,9 @@ OKX_CONFIG = {
 
 # ==================== TRADING CONFIG ====================
 TRADING_CONFIG = {
-    'symbol': os.getenv('TRADING_SYMBOL', 'PAXG/USDT'),
-    'timeframe': os.getenv('TIMEFRAME', '15m'),
-    'trade_size_usdt': float(os.getenv('TRADE_SIZE_USDT', 100)),
+    'symbol': 'PAXG/USDT',
+    'timeframe': '15m',
+    'trade_size_usdt': 100.0,
     'max_open_positions': 1,
     'trading_enabled': False,  # ตั้งเป็น False เพื่อทดสอบโดยไม่ส่งออร์เดอร์จริง
 }
@@ -39,8 +54,8 @@ RISK_CONFIG = {
 
 # ==================== TELEGRAM CONFIG ====================
 TELEGRAM_CONFIG = {
-    'token': os.getenv('TELEGRAM_BOT_TOKEN', '8445583953:AAHvaT4WC31YM2yQdrA5mu5PQ8N8XqNig78'),
-    'chat_id': os.getenv('TELEGRAM_CHAT_ID', '5292577404'),
+    'token':  '8445583953:AAHvaT4WC31YM2yQdrA5mu5PQ8N8XqNig78',
+    'chat_id':  '5292577404',
     'notifications_enabled': True,
 }
 
@@ -63,6 +78,7 @@ BOT_CONFIG = {
     'trading_interval_minutes': 15,
     'health_check_interval_minutes': 5,
     'hourly_report_enabled': True,
+    'daily_export_enabled': True,  # Auto export trade history ทุกเที่ยงคืน
     'debug_mode': False,
 }
 
