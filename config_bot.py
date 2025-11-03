@@ -39,9 +39,9 @@ OKX_CONFIG = {
 TRADING_CONFIG = {
     'symbol': 'PAXG/USDT',
     'timeframe': '15m',
-    'trade_size_usdt': 100.0,
+    'trade_size_usdt': 10.0,
     'max_open_positions': 1,
-    'trading_enabled': False,  # ตั้งเป็น False เพื่อทดสอบโดยไม่ส่งออร์เดอร์จริง
+    'trading_enabled': True,  # ตั้งเป็น False เพื่อทดสอบโดยไม่ส่งออร์เดอร์จริง
 }
 
 # ==================== RISK MANAGEMENT ====================
@@ -64,7 +64,7 @@ MODEL_CONFIG = {
     'model_path': 'saved_models/best_trading_model_lightgbm.pkl',
     'scaler_path': 'saved_models/feature_scaler.pkl',
     'features_path': 'saved_models/feature_columns.pkl',
-    'min_confidence': 0.6,  # ความมั่นใจขั้นต่ำที่ยอมรับ
+    'min_confidence': 0.7,  # ความมั่นใจขั้นต่ำที่ยอมรับ
 }
 
 # ==================== DATABASE CONFIG ====================
