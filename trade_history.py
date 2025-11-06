@@ -233,6 +233,34 @@ class TradeHistoryManager:
             self.logger.error(f"❌ Failed to get entry trade: {e}")
             return None
     
+    def get_recent_trades(self, symbol: str, limit: int = 10) -> List[Dict]:
+        """ดึงข้อมูลการเทรดล่าสุดสำหรับ symbol นี้"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+            
+            cursor.execute('''
+                SELECT * FROM trades 
+                WHERE symbol = ? 
+                ORDER BY timestamp DESC 
+                LIMIT ?
+            ''', (symbol, limit))
+            
+            rows = cursor.fetchall()
+            
+            if rows:
+                columns = [description[0] for description in cursor.description]
+                results = [dict(zip(columns, row)) for row in rows]
+                conn.close()
+                return results
+            
+            conn.close()
+            return []
+            
+        except Exception as e:
+            self.logger.error(f"❌ Failed to get recent trades: {e}")
+            return []
+    
     def get_hourly_stats(self, hours: int = 1) -> Dict:
         """คำนวณสถิติในช่วงเวลาที่กำหนด"""
         try:

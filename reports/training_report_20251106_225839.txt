@@ -1,0 +1,20 @@
+============================================================
+GOLD TRADING MODEL - TRAINING REPORT
+============================================================
+
+Training Date: 2025-11-06T22:58:39.193780
+
+DATA INFORMATION:
+Samples: 17457
+Features: 25
+
+MODEL RESULTS:
+
+LIGHTGBM:
+  accuracy: 0.995418098510882
+  f1_score: 0.9951803485193769
+  success_rate: 1.0
+  total_signals: 11
+  profit_signals: 11
+
+============================================================

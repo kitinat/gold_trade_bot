@@ -720,7 +720,8 @@ class AdvancedTradingModelTrainer:
         """Advanced auto-tuning สำหรับ multiple models"""
         
         if models_to_tune is None:
-            models_to_tune = ['xgboost', 'lightgbm', 'random_forest', 'lstm']
+            #models_to_tune = ['xgboost', 'lightgbm', 'random_forest', 'lstm']
+            models_to_tune = ['lightgbm']
         
         print("🚀 Starting Advanced Auto Tuning...")
         print(f"📊 Models to tune: {models_to_tune}")
@@ -853,6 +854,11 @@ class AdvancedTradingModelTrainer:
     def train_models_with_best_params(self, best_params):
         """Train models ด้วย best parameters ที่ได้จากการ tuning"""
         print("\n🏋️ Training Models with Best Parameters...")
+        
+        # ===== FIT SCALER FIRST =====
+        print("\n📊 Fitting scaler on all features...")
+        self.scaler.fit(self.features)
+        print(f"   ✅ Scaler fitted on {len(self.features)} samples with {len(self.features.columns)} features")
         
         best_models = {}
         

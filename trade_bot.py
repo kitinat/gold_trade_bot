@@ -61,7 +61,65 @@ class OKXTradingBot:
         # เริ่มระบบ export รายวัน
         self.start_daily_export()
         
+        # แสดงสรุปการตั้งค่า
+        self.display_startup_summary()
+        
         self.logger.info("✅ Trading bot initialized successfully")
+    
+    def display_startup_summary(self):
+        """แสดงสรุปการตั้งค่าเมื่อเริ่มต้น bot"""
+        try:
+            position_info = self.check_position(TRADING_CONFIG['symbol'])
+            
+            # คำนวณ min_order_size string (ป้องกัน None)
+            if hasattr(self, 'min_order_size') and self.min_order_size:
+                min_order_text = f"{self.min_order_size:.8f} {TRADING_CONFIG['symbol'].split('/')[0]}"
+            else:
+                min_order_text = 'N/A'
+            
+            summary = f"""
+{'='*60}
+🤖 TRADING BOT STARTUP SUMMARY
+{'='*60}
+
+📊 EXCHANGE & ACCOUNT
+├─ Exchange: OKX {'[LIVE]' if not OKX_CONFIG.get('sandbox', False) else '[TESTNET]'}
+├─ Symbol: {TRADING_CONFIG['symbol']}
+├─ Timeframe: {TRADING_CONFIG['timeframe']}
+├─ Balance: ${position_info['total_usdt']:.2f} USDT (${position_info['free_usdt']:.2f} available)
+└─ Current Position: {'Yes' if position_info.get('current_position') else 'None'}
+
+💰 TRADING CONFIGURATION
+├─ Trade Size: ${TRADING_CONFIG['trade_size_usdt']} USDT
+├─ Max Positions: {TRADING_CONFIG['max_open_positions']}
+├─ Trading Enabled: {'✅ YES' if TRADING_CONFIG['trading_enabled'] else '❌ NO (Simulation)'}
+└─ Min Order Size: {min_order_text}
+
+📈 RISK MANAGEMENT
+├─ Stop Loss: {RISK_CONFIG['stop_loss_pct']*100:.1f}%
+├─ Take Profit: {RISK_CONFIG['take_profit_pct']*100:.1f}%
+├─ Max Daily Loss: {RISK_CONFIG['max_daily_loss_pct']:.1f}%
+└─ Position Size: {RISK_CONFIG['position_size_pct']:.1f}% of balance
+
+🤖 ML MODEL
+├─ Model: {'✅ Loaded' if self.model is not None else '❌ Not Available'}
+├─ Scaler: {'✅ Fitted' if self.scaler is not None and hasattr(self.scaler, 'mean_') else '❌ Not Available'}
+├─ Features: {len(self.feature_columns) if self.feature_columns else 0}
+└─ Min Confidence: {MODEL_CONFIG['min_confidence']*100:.0f}%
+
+⚙️  BOT BEHAVIOR
+├─ Trading Interval: {BOT_CONFIG['trading_interval_minutes']} minutes
+├─ Hourly Reports: {'✅ Enabled' if BOT_CONFIG['hourly_report_enabled'] else '❌ Disabled'}
+├─ Daily Export: {'✅ Enabled' if BOT_CONFIG.get('daily_export_enabled', True) else '❌ Disabled'}
+└─ Debug Mode: {'✅ ON' if BOT_CONFIG['debug_mode'] else '❌ OFF'}
+
+{'='*60}
+            """
+            
+            self.logger.info(summary)
+            
+        except Exception as e:
+            self.logger.warning(f"Could not display startup summary: {e}")
     
     def setup_logging(self):
         """Setup logging configuration"""
@@ -201,6 +259,16 @@ class OKXTradingBot:
             self.logger.info(f"   Market type: {market_info.get('type', 'unknown')}")
             self.logger.info(f"   Spot: {market_info.get('spot', False)}")
             self.logger.info(f"   Swap: {market_info.get('swap', False)}")
+            
+            # เก็บข้อมูล market limits สำหรับตรวจสอบ order size
+            self.market_info = market_info
+            self.min_order_size = market_info.get('limits', {}).get('amount', {}).get('min', 0) or 0
+            self.max_order_size = market_info.get('limits', {}).get('amount', {}).get('max') or float('inf')
+            
+            if self.min_order_size and self.min_order_size > 0:
+                self.logger.info(f"   Min order size: {self.min_order_size:.8f}")
+            if self.max_order_size and self.max_order_size < float('inf'):
+                self.logger.info(f"   Max order size: {self.max_order_size:.8f}")
             
         except Exception as e:
             self.logger.error(f"❌ Failed to validate symbol: {e}")
@@ -352,6 +420,18 @@ class OKXTradingBot:
             scaler_type = type(self.scaler).__name__
             self.logger.info(f"   ✅ Scaler type: {scaler_type}")
             
+            # ตรวจสอบว่า scaler ถูก fit แล้ว
+            if not hasattr(self.scaler, 'mean_') and not hasattr(self.scaler, 'scale_'):
+                self.logger.error("   ❌ Scaler is not fitted properly!")
+                self.logger.warning("   Scaler will be reset to None - using basic signal mode")
+                self.scaler = None
+                self.model = None
+                return
+            else:
+                self.logger.info(f"   ✅ Scaler is fitted correctly")
+                if hasattr(self.scaler, 'n_features_in_'):
+                    self.logger.info(f"   ✅ Scaler expects {self.scaler.n_features_in_} features")
+            
             # โหลด feature columns
             self.logger.info("Loading feature columns...")
             self.feature_columns = joblib.load(MODEL_CONFIG['features_path'])
@@ -461,17 +541,32 @@ class OKXTradingBot:
             self.logger.error(f"Error Type: {type(e).__name__}")
             self.logger.error(f"Error Message: {str(e)}")
             self.logger.error("")
-            self.logger.error("Possible causes:")
-            self.logger.error("  1. Model files are corrupted")
-            self.logger.error("  2. Model was trained with different sklearn/library version")
-            self.logger.error("  3. Insufficient memory to load models")
-            self.logger.error("  4. File permission issues")
-            self.logger.error("")
-            self.logger.error("Recommended actions:")
-            self.logger.error("  1. Check file permissions")
-            self.logger.error("  2. Re-train the model using: python train_model_v2.py")
-            self.logger.error("  3. Check library versions:")
-            self.logger.error("     pip list | grep -E 'scikit-learn|joblib|xgboost|lightgbm'")
+            
+            # ตรวจสอบว่าเป็นปัญหากับ scaler หรือไม่
+            if 'scaler' in str(e).lower() or 'standardscaler' in str(e).lower() or 'not fitted' in str(e).lower():
+                self.logger.error("🔍 SCALER ISSUE DETECTED!")
+                self.logger.error("")
+                self.logger.error("This error usually means:")
+                self.logger.error("  1. The scaler file is corrupted")
+                self.logger.error("  2. The scaler was not saved properly during training")
+                self.logger.error("  3. Mismatch between sklearn versions")
+                self.logger.error("")
+                self.logger.error("SOLUTION:")
+                self.logger.error("  Re-train the model to regenerate all files:")
+                self.logger.error("  → python train_model_v2.py")
+                self.logger.error("")
+            else:
+                self.logger.error("Possible causes:")
+                self.logger.error("  1. Model files are corrupted")
+                self.logger.error("  2. Model was trained with different sklearn/library version")
+                self.logger.error("  3. Insufficient memory to load models")
+                self.logger.error("  4. File permission issues")
+                self.logger.error("")
+                self.logger.error("Recommended actions:")
+                self.logger.error("  1. Check file permissions")
+                self.logger.error("  2. Re-train the model using: python train_model_v2.py")
+                self.logger.error("  3. Check library versions:")
+                self.logger.error("     pip list | grep -E 'scikit-learn|joblib|xgboost|lightgbm'")
             self.logger.error("="*60)
             
             # บันทึก error
@@ -1140,28 +1235,38 @@ class OKXTradingBot:
             
             # ถ้าโมเดลพร้อม ให้ใช้โมเดล
             if self.model is not None and self.scaler is not None:
-                features = self.calculate_features_real_time(df)
-                if features is not None:
-                    features_scaled = self.scaler.transform(features)
-                    prediction = self.model.predict(features_scaled)[0]
-                    probability = self.model.predict_proba(features_scaled)[0]
-                    
-                    # แสดงข้อมูล Model Prediction
-                    max_prob = float(max(probability))
-                    confidence_level = 'HIGH' if max_prob > 0.7 else 'MEDIUM' if max_prob > MODEL_CONFIG['min_confidence'] else 'LOW'
-                    
-                    self.logger.info(f"🤖 ML Prediction: {prediction} | Confidence: {confidence_level} ({max_prob:.1%})")
-                    self.logger.info(f"   Probabilities: BUY={probability[1]:.1%}, SELL={probability[0]:.1%}")
-                    
-                    signal_info.update({
-                        'signal': prediction,
-                        'probability': max_prob,
-                        'confidence': confidence_level,
-                        'features': features.tolist()
-                    })
-                else:
-                    # Fallback to basic signal
+                # ตรวจสอบว่า scaler ถูก fit แล้ว
+                if not hasattr(self.scaler, 'mean_') and not hasattr(self.scaler, 'scale_'):
+                    self.logger.error("❌ Scaler is not fitted! Falling back to basic signal")
                     signal_info.update(self._get_basic_signal(df))
+                else:
+                    features = self.calculate_features_real_time(df)
+                    if features is not None:
+                        try:
+                            features_scaled = self.scaler.transform(features)
+                            prediction = self.model.predict(features_scaled)[0]
+                            probability = self.model.predict_proba(features_scaled)[0]
+                            
+                            # แสดงข้อมูล Model Prediction
+                            max_prob = float(max(probability))
+                            confidence_level = 'HIGH' if max_prob > 0.7 else 'MEDIUM' if max_prob > MODEL_CONFIG['min_confidence'] else 'LOW'
+                            
+                            self.logger.info(f"🤖 ML Prediction: {prediction} | Confidence: {confidence_level} ({max_prob:.1%})")
+                            self.logger.info(f"   Probabilities: BUY={probability[1]:.1%}, SELL={probability[0]:.1%}")
+                            
+                            signal_info.update({
+                                'signal': prediction,
+                                'probability': max_prob,
+                                'confidence': confidence_level,
+                                'features': features.tolist()
+                            })
+                        except Exception as e:
+                            self.logger.error(f"❌ Error in ML prediction: {e}")
+                            self.logger.warning("⚠️  Falling back to basic signal")
+                            signal_info.update(self._get_basic_signal(df))
+                    else:
+                        # Fallback to basic signal
+                        signal_info.update(self._get_basic_signal(df))
             else:
                 # ใช้ basic signal logic
                 signal_info.update(self._get_basic_signal(df))
@@ -1426,8 +1531,11 @@ class OKXTradingBot:
             
             if base_amount > 0:
                 current_price = self.get_current_price(symbol)
+                
+                # ดึงข้อมูล entry price จาก trade history
                 recent_trades = self.history_manager.get_recent_trades(symbol, limit=1)
-                entry_price = recent_trades[0]['price'] if recent_trades else current_price
+                entry_price = recent_trades[0]['price'] if recent_trades and len(recent_trades) > 0 else current_price
+                
                 unrealized_pnl = (current_price - entry_price) * base_amount
                 
                 position_info['current_position'] = {
@@ -1479,7 +1587,7 @@ class OKXTradingBot:
             return TRADING_CONFIG['trade_size_usdt'] / current_price
     
     def place_order(self, symbol: str, side: str, signal_info: dict, exit_reason: str = None):
-        """Place order on OKX"""
+        """Place order on OKX with balance validation"""
         if not TRADING_CONFIG['trading_enabled']:
             self.logger.info(f"📝 [SIMULATION] Would place {side} order for {symbol}")
             return {
@@ -1497,15 +1605,129 @@ class OKXTradingBot:
             }
         
         try:
+            # ===== BALANCE CHECK BEFORE TRADE =====
+            position_info = self.check_position(symbol)
+            if not position_info:
+                self.logger.error("❌ Cannot check balance - aborting order")
+                return None
+            
             position_size = self.calculate_position_size(signal_info['price'])
             value_usdt = position_size * signal_info['price']
             
+            # ตรวจสอบความพอเพียงของเงิน
+            if side.lower() == 'buy':
+                # สำหรับการซื้อ ต้องมี USDT เพียงพอ
+                available_balance = position_info['free_usdt']
+                required_balance = value_usdt * 1.001  # เพิ่ม 0.1% สำหรับค่าธรรมเนียม
+                
+                if available_balance < required_balance:
+                    error_msg = f"""
+❌ <b>INSUFFICIENT BALANCE</b>
+├ Required: ${required_balance:.2f} USDT
+├ Available: ${available_balance:.2f} USDT
+├ Shortage: ${required_balance - available_balance:.2f} USDT
+├ Symbol: {symbol}
+├ Action: {side.upper()}
+└ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+💡 Tip: Reduce trade_size_usdt in config_bot.py or add more funds
+                    """
+                    self.logger.error(f"❌ Insufficient balance: Required ${required_balance:.2f}, Available ${available_balance:.2f}")
+                    asyncio.run(self.send_telegram_message(error_msg))
+                    self.history_manager.log_error(
+                        'INSUFFICIENT_BALANCE', 
+                        f"Required: ${required_balance:.2f}, Available: ${available_balance:.2f}",
+                        f"Symbol: {symbol}, Side: {side}, Trade Size: ${value_usdt:.2f}"
+                    )
+                    return None
+                
+                self.logger.info(f"✅ Balance check passed: ${available_balance:.2f} available, ${required_balance:.2f} required")
+                
+            elif side.lower() == 'sell':
+                # สำหรับการขาย ต้องมี base currency (PAXG) เพียงพอ
+                current_position = position_info.get('current_position')
+                if not current_position:
+                    error_msg = f"""
+❌ <b>NO POSITION TO SELL</b>
+├ Symbol: {symbol}
+├ Action: SELL (attempted)
+├ Issue: No {symbol.split('/')[0]} holdings found
+└ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                    """
+                    self.logger.error("❌ No position to sell")
+                    asyncio.run(self.send_telegram_message(error_msg))
+                    return None
+                
+                available_amount = current_position.get('size', 0)
+                if available_amount < position_size:
+                    error_msg = f"""
+❌ <b>INSUFFICIENT POSITION SIZE</b>
+├ Required: {position_size:.4f} {symbol.split('/')[0]}
+├ Available: {available_amount:.4f} {symbol.split('/')[0]}
+├ Shortage: {position_size - available_amount:.4f}
+├ Symbol: {symbol}
+└ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                    """
+                    self.logger.error(f"❌ Insufficient position: Required {position_size:.4f}, Available {available_amount:.4f}")
+                    asyncio.run(self.send_telegram_message(error_msg))
+                    return None
+                
+                self.logger.info(f"✅ Position check passed: {available_amount:.4f} available, {position_size:.4f} required")
+            
+            # ===== ORDER SIZE VALIDATION =====
+            # ตรวจสอบ minimum order size
+            if hasattr(self, 'min_order_size') and self.min_order_size and self.min_order_size > 0:
+                if position_size < self.min_order_size:
+                    error_msg = f"""
+❌ <b>ORDER SIZE TOO SMALL</b>
+├ Order size: {position_size:.8f} {symbol.split('/')[0]}
+├ Minimum required: {self.min_order_size:.8f} {symbol.split('/')[0]}
+├ Symbol: {symbol}
+├ Value: ${value_usdt:.2f}
+└ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+💡 Solution:
+   • Increase trade_size_usdt in config_bot.py
+   • Current: ${TRADING_CONFIG['trade_size_usdt']}
+   • Recommended: ${self.min_order_size * signal_info['price'] * 1.1:.2f}+
+                    """
+                    self.logger.error(f"❌ Order size {position_size:.8f} is below minimum {self.min_order_size:.8f}")
+                    asyncio.run(self.send_telegram_message(error_msg))
+                    self.history_manager.log_error(
+                        'ORDER_SIZE_TOO_SMALL',
+                        f"Size: {position_size:.8f}, Min: {self.min_order_size:.8f}",
+                        f"Symbol: {symbol}, Trade Size: ${value_usdt:.2f}"
+                    )
+                    return None
+            
+            # ตรวจสอบ maximum order size
+            if hasattr(self, 'max_order_size') and self.max_order_size and self.max_order_size < float('inf'):
+                if position_size > self.max_order_size:
+                    error_msg = f"""
+❌ <b>ORDER SIZE TOO LARGE</b>
+├ Order size: {position_size:.8f} {symbol.split('/')[0]}
+├ Maximum allowed: {self.max_order_size:.8f} {symbol.split('/')[0]}
+├ Symbol: {symbol}
+└ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+💡 Solution:
+   • Reduce trade_size_usdt in config_bot.py
+                    """
+                    self.logger.error(f"❌ Order size {position_size:.8f} exceeds maximum {self.max_order_size:.8f}")
+                    asyncio.run(self.send_telegram_message(error_msg))
+                    return None
+            
+            self.logger.info(f"✅ Order size validation passed: {position_size:.8f} {symbol.split('/')[0]}")
+            
+            # ===== EXECUTE ORDER =====
             order_params = {
                 'symbol': symbol,
                 'type': 'market',
                 'side': side,
                 'amount': position_size,
             }
+            
+            self.logger.info(f"📤 Sending order to OKX: {side.upper()} {position_size:.4f} {symbol} (~${value_usdt:.2f})")
             
             # ส่งออร์เดอร์
             order = self.exchange.create_order(**order_params)
@@ -1527,7 +1749,12 @@ class OKXTradingBot:
             # บันทึกการเทรด
             self.history_manager.log_trade(order_info)
             
-            self.logger.info(f"✅ Order placed: {side} {position_size} {symbol} at {signal_info['price']}")
+            self.logger.info(f"✅ Order executed successfully: {side.upper()} {position_size:.4f} {symbol} at ${signal_info['price']:.2f}")
+            
+            # แสดง balance หลัง trade
+            updated_balance = self.check_position(symbol)
+            if updated_balance:
+                self.logger.info(f"💰 Updated Balance: ${updated_balance['total_usdt']:.2f} USDT (${updated_balance['free_usdt']:.2f} available)")
             
             # ส่งแจ้งเตือน Telegram
             message = f"""
@@ -1537,7 +1764,9 @@ class OKXTradingBot:
 ├ Amount: {position_size:.4f}
 ├ Price: ${signal_info['price']:.2f}
 ├ Value: ${value_usdt:.2f}
+├ Fee: ~${order_info['fee']:.4f}
 ├ Confidence: {signal_info.get('confidence', 'MEDIUM')}
+├ Balance: ${updated_balance['free_usdt']:.2f} USDT available
 └ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
             """
             
@@ -1547,6 +1776,44 @@ class OKXTradingBot:
             asyncio.run(self.send_telegram_message(message))
             
             return order_info
+            
+        except ccxt.InsufficientFunds as e:
+            # Handle insufficient funds error จาก exchange
+            self.logger.error(f"❌ Insufficient funds from exchange: {e}")
+            error_message = f"""
+❌ <b>INSUFFICIENT FUNDS (Exchange Error)</b>
+├ Symbol: {symbol}
+├ Action: {side.upper()}
+├ Error: {str(e)}
+└ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+💡 Action required:
+   • Check your OKX account balance
+   • Reduce trade_size_usdt in config
+   • Ensure funds are in Trading account (not Funding)
+            """
+            asyncio.run(self.send_telegram_message(error_message))
+            self.history_manager.log_error('INSUFFICIENT_FUNDS', str(e), f"Side: {side}, Symbol: {symbol}")
+            return None
+            
+        except ccxt.InvalidOrder as e:
+            # Handle invalid order error
+            self.logger.error(f"❌ Invalid order: {e}")
+            error_message = f"""
+❌ <b>INVALID ORDER</b>
+├ Symbol: {symbol}
+├ Action: {side.upper()}
+├ Error: {str(e)}
+└ Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+💡 Possible issues:
+   • Order size too small/large
+   • Symbol not available
+   • Market closed
+            """
+            asyncio.run(self.send_telegram_message(error_message))
+            self.history_manager.log_error('INVALID_ORDER', str(e), f"Side: {side}, Symbol: {symbol}")
+            return None
             
         except Exception as e:
             self.logger.error(f"❌ Error placing order: {e}")

@@ -49,7 +49,7 @@ RISK_CONFIG = {
     'stop_loss_pct': 0.02,  # 2% stop loss
     'take_profit_pct': 0.04,  # 4% take profit
     'max_daily_loss_pct': 5.0,  # หยุดเทรดถ้าขาดทุนเกิน 5% ต่อวัน
-    'position_size_pct': 1.0,  # ขนาดออร์เดอร์ 1% ของทุน
+    'position_size_pct': 100.0,  # ขนาดออร์เดอร์ 1% ของทุน
 }
 
 # ==================== TELEGRAM CONFIG ====================
@@ -64,7 +64,7 @@ MODEL_CONFIG = {
     'model_path': 'saved_models/best_trading_model_lightgbm.pkl',
     'scaler_path': 'saved_models/feature_scaler.pkl',
     'features_path': 'saved_models/feature_columns.pkl',
-    'min_confidence': 0.7,  # ความมั่นใจขั้นต่ำที่ยอมรับ
+    'min_confidence': 0.6,  # ความมั่นใจขั้นต่ำที่ยอมรับ
 }
 
 # ==================== DATABASE CONFIG ====================
